@@ -83,10 +83,10 @@
 
     <script>
         const SALT = "NS-LTC-2026";
-        const _CN = "長期照顧險分類"; 
+        const _CN = "長期照顧保險商品分類與說明"; 
         const _MODE = "MASTER";
-        const _D = ["U2FsdGVkX1+5JBCDitYWBqMExa0NoqUk8E8GO4zUBvhFlZifeclRY1ZLSH8mvZixQGUInqN51hyJnGP1uZXt7RXDPY9+SUPlZkpTekHJKt3U1dom7+7G5poZZw9AUXxaasjEUSPfgUOGM62qxnj6A3K6Dlh1KmjF8cOyh+5Vk6lcNv5RIX3hRJdU94q3JyTp", "", "", "", "", "", "", ""]; 
-        const _N = ["商品", "", "", "", "", "", "", ""];
+        const _D = ["U2FsdGVkX19TtNDRiiKeMYhmOzjkkmJMbl/GNbwNPToEt+0YbiEc4/y0unhUno+k5YUm4WN6h9h1nx1RYdvbgBVIebG55arCqibdR/0KKqbzVDWjY53zuCe07Xw8igQ3QSWszdtJQW90KC7M3bxqgn5J8PqWeaG5b75+yfg508RPHbmTK3SZcRziJeHeiteL", "", "", "", "", "", "", ""]; 
+        const _N = ["商品分類與說明", "", "", "", "", "", "", ""];
 
         let lastTap = 0;
         let tapCount = 0;
@@ -166,7 +166,7 @@
             const content = card.querySelector('.topic-content');
             const isActive = card.classList.contains('active');
 
-            // 【核心修改】：先收合其他所有分類
+            // 手風琴效果：收合其他
             document.querySelectorAll('.topic-card').forEach(otherCard => {
                 if (otherCard !== card) {
                     otherCard.classList.remove('active');
@@ -174,7 +174,6 @@
                 }
             });
 
-            // 切換當前點選的分類
             if (isActive) {
                 card.classList.remove('active');
                 content.style.maxHeight = null;
@@ -199,6 +198,7 @@
                 }
             }
             
+            // 產製前先強制隱藏面板
             document.getElementById('admin-panel').style.display = 'none';
             let h = document.documentElement.outerHTML;
             
@@ -215,10 +215,13 @@
 
             const b = new Blob(["<!DOCTYPE html>\n" + h], { type: "text/html" });
             const a = document.createElement("a");
-            a.href = URL.createObjectURL(b); a.download = `長照簡報-${name}.html`; a.click();
+            a.href = URL.createObjectURL(b); 
+            // 修改下載檔名為使用者要求的固定名稱
+            a.download = `長照簡報-長期照顧險商品.html`; 
+            a.click();
             
             document.getElementById('admin-panel').style.display = 'block';
-            alert("✅ 客戶檔案已產製。\n預設狀態：後台隱藏、分類收合、單選切換。");
+            alert("✅ 客戶檔案已產製。\n預設檔名為：長照簡報-長期照顧險商品.html");
         }
 
         window.onload = function() {
