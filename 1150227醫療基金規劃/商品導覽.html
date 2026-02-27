@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔐 驗證身分 [A-052746]</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; color: white; font-family: 'Microsoft JhengHei', sans-serif; overflow: hidden; }
+        .card { max-width: 450px; width: 90%; background: rgba(255, 255, 255, 0.95); padding: 3rem 2rem; border-radius: 3rem; box-shadow: 0 40px 100px -20px rgba(0,0,0,0.5); text-align: center; color: #1e293b; backdrop-filter: blur(10px); border: 8px solid rgba(255, 255, 255, 0.3); transition: opacity 0.3s; }
+        .hidden-ui { opacity: 0; pointer-events: none; }
+        input { background: #f1f5f9 !important; border: 3px solid #e2e8f0; color: #1e293b !important; font-weight: 900; text-align: center; font-size: 1.5rem; transition: all 0.3s; }
+        input:focus { border-color: #a855f7; outline: none; background: white !important; }
+        .btn-magic { background: linear-gradient(90deg, #6366f1, #a855f7); }
+        .mil-spec { color: #475569; font-size: 0.75rem; letter-spacing: 0.1em; font-weight: 900; border: 1px solid #cbd5e1; padding: 2px 8px; border-radius: 6px; display: inline-block; margin-bottom: 1rem; }
+    </style>
+</head>
+<body>
+    <div id="unlock-ui" class="card hidden-ui">
+        <div class="text-6xl mb-4">🔐</div>
+        <div class="mil-spec"> (軍用規格加密) </div>
+        <h2 class="text-3xl font-black mb-2">檔案編號 A-052746</h2>
+        <p class="text-slate-400 font-bold mb-8">請輸入通行密碼以解鎖內容</p>
+        <div class="space-y-4">
+            <input type="password" id="pw" class="w-full p-5 rounded-3xl tracking-[0.5em]" placeholder="••••••" autofocus>
+            <button onclick="tryUnlock()" id="unlockBtn" class="w-full btn-magic text-white py-5 rounded-3xl font-black text-xl shadow-lg active:scale-95 transition-all">驗證並解鎖</button>
+        </div>
+        <p id="err" class="text-rose-500 text-sm mt-6 hidden font-black">❌ 密碼不正確</p>
+    </div>
+    <script>
+        const _DATA = "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";
+        const STORAGE_KEY = "secure_project_session_token";
+
+        window.onload = async () => {
+            const savedPw = sessionStorage.getItem(STORAGE_KEY);
+            if (savedPw) {
+                const success = await decryptAndRender(savedPw, true);
+                if (success) return;
+            }
+            document.getElementById('unlock-ui').classList.remove('hidden-ui');
+        };
+
+        async function tryUnlock() {
+            const pw = document.getElementById('pw').value;
+            if (!pw) return;
+            const success = await decryptAndRender(pw, false);
+            if (success) {
+                sessionStorage.setItem(STORAGE_KEY, pw);
+            } else {
+                document.getElementById('err').classList.remove('hidden');
+                document.getElementById('pw').value = '';
+            }
+        }
+
+        async function decryptAndRender(password, isAuto) {
+            try {
+                const bin = atob(_DATA);
+                const bytes = new Uint8Array(bin.length);
+                for(let i=0; i<bin.length; i++) bytes[i] = bin.charCodeAt(i);
+                const keyBlockA = bytes.slice(0, 76), keyBlockB = bytes.slice(76, 152), ivContent = bytes.slice(152, 164), encryptedContent = bytes.slice(164);
+                const enc = new TextEncoder();
+                const unwrap = async (block) => {
+                    try {
+                        const salt = block.slice(0, 16), iv = block.slice(16, 28), wrapped = block.slice(28);
+                        const keyMat = await crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]);
+                        const derivedKey = await crypto.subtle.deriveKey({ name: "PBKDF2", salt, iterations: 1000, hash: "SHA-256" }, keyMat, { name: "AES-GCM", length: 256 }, false, ["decrypt"]);
+                        const rawKey = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, derivedKey, wrapped);
+                        return new Uint8Array(rawKey);
+                    } catch(e) { return null; }
+                };
+                let dataKey = await unwrap(keyBlockA);
+                if (!dataKey) dataKey = await unwrap(keyBlockB);
+                if (!dataKey) return false;
+                const cryptoKey = await crypto.subtle.importKey("raw", dataKey, "AES-GCM", false, ["decrypt"]);
+                const decrypted = await crypto.subtle.decrypt({ name: "AES-GCM", iv: ivContent }, cryptoKey, encryptedContent);
+                document.open(); document.write(new TextDecoder().decode(decrypted)); document.close();
+                return true;
+            } catch (e) { return false; }
+        }
+    </script>
+</body>
+</html>
