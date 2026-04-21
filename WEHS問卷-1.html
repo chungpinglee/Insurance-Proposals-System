@@ -160,7 +160,6 @@
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
     import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-    // 新增 deleteDoc
     import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection, getDoc, query } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 
     try {
@@ -581,7 +580,7 @@
                   <Icon name="Settings" size={16}/> <span className="hidden sm:inline">API 設定</span>
                 </button>
               )}
-              {role && <button onClick={() => {setRole(null); setView('main');}} className="bg-red-500/10 text-red-500 px-3 md:px-4 py-1.5 rounded-xl text-xs md:text-sm font-bold border border-red-500/20 hover:bg-red-500/20 transition-colors">登出</button>}
+              {role && <button onClick={() => {setRole(null); setView('main'); setStudentName('');}} className="bg-red-500/10 text-red-500 px-3 md:px-4 py-1.5 rounded-xl text-xs md:text-sm font-bold border border-red-500/20 hover:bg-red-500/20 transition-colors">登出</button>}
             </div>
           </header>
 
@@ -663,6 +662,11 @@
                        }
                        setAllAnswersData(prev => prev.map(a => a.studentId === studentId ? { ...a, status: 'submitted' } : a));
                      }} 
+                     onExit={() => {
+                       setRole(null);
+                       setView('main');
+                       setStudentName('');
+                     }}
                    />
                 )}
               </>
@@ -1530,7 +1534,7 @@ ${qaText}`;
       );
     }
 
-    function StudentDashboard({ session, myData, onAnswer, onFinalSubmit }) {
+    function StudentDashboard({ session, myData, onAnswer, onFinalSubmit, onExit }) {
       // 加入了歷史紀錄軌跡，以支援分流和「上一題」功能
       const [history, setHistory] = useState([0]); 
       const idx = history[history.length - 1]; 
@@ -1596,8 +1600,9 @@ ${qaText}`;
         }
       }, [session.status, session.startedAt, session.autoCloseUnit, session.autoCloseValue]);
 
-      const handleNext = () => {
-         const selectedIndex = q?.options ? q.options.indexOf(selected) : -1;
+      const handleNext = (autoAdvanceValue) => {
+         const valToCheck = autoAdvanceValue !== undefined ? autoAdvanceValue : selected;
+         const selectedIndex = q?.options ? q.options.indexOf(valToCheck) : -1;
          let nextIdx = idx + 1;
          
          // 若題目有分流邏輯且有選對應選項，則依據選項指派下一題
@@ -1623,18 +1628,25 @@ ${qaText}`;
 
       if (session.status === 'lobby') return <div className="h-[60vh] flex flex-col items-center justify-center text-center p-8 bg-white rounded-[3rem] shadow-2xl border"><h2>問卷尚未啟動 🙌</h2></div>;
       if (isClosedByTime && myData?.status !== 'submitted') return <div className="h-[60vh] flex flex-col items-center justify-center text-center p-8 bg-white rounded-[3rem] shadow-2xl border"><h2>問卷已停止回應 ⏰</h2></div>;
-      if (myData?.status === 'submitted') return <div className="max-w-xl mx-auto mt-20 p-16 bg-white rounded-[4rem] shadow-2xl text-center"><h2>填寫完成！✨</h2></div>;
-
-      // 判斷按鈕文字
-      let nextIdxForLabel = idx + 1;
-      const selectedIndexForLabel = q?.options ? q.options.indexOf(selected) : -1;
-      if (q?.jumpLogic && selectedIndexForLabel !== -1 && q.jumpLogic[selectedIndexForLabel] !== undefined) {
-          nextIdxForLabel = q.jumpLogic[selectedIndexForLabel];
-      }
-      const isLastStep = q?.isEnd || nextIdxForLabel >= session.questions.length;
+      
+      // 完成後的感謝與結束畫面
+      if (myData?.status === 'submitted') return (
+         <div className="max-w-xl mx-auto mt-20 p-12 md:p-16 bg-white rounded-[4rem] shadow-2xl text-center space-y-8 border animate-in zoom-in-95">
+            <div className="w-24 h-24 bg-emerald-100 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Icon name="CheckCircle" size={48} />
+            </div>
+            <h2 className="text-3xl font-black text-slate-800">填寫完成！✨</h2>
+            <p className="text-slate-500 font-bold text-lg">感謝您的寶貴時間與真實回覆。<br/>我們將用心為您準備專屬方案。</p>
+            <div className="pt-8">
+               <button onClick={onExit} className="w-full md:w-auto px-12 py-4 bg-slate-900 text-white rounded-[2rem] font-black text-lg shadow-xl hover:bg-slate-800 active:scale-95 transition-all flex items-center justify-center gap-2 mx-auto">
+                 <Icon name="LogOut" size={20} /> 結束並登出
+               </button>
+            </div>
+         </div>
+      );
 
       return (
-        <div className="max-w-2xl mx-auto space-y-8 relative">
+        <div className="max-w-2xl mx-auto space-y-8 relative animate-in fade-in duration-500">
           {session.timeLimit > 0 && (
             <div className="absolute -top-12 right-0 bg-red-100 text-red-600 font-black px-4 py-2 rounded-full flex items-center gap-2 shadow-sm border border-red-200">
               <Icon name="Timer" size={18} /> 剩餘 {timeLeft} 秒
@@ -1648,9 +1660,16 @@ ${qaText}`;
                {q?.type === 'choice' ? (
                  <div className="space-y-3">
                    {q.options.map((opt, i) => (
-                     <button key={i} onClick={() => onAnswer(idx, opt)} 
-                      className={`w-full p-4 rounded-[1.5rem] text-left font-black border-2 transition-all flex items-center gap-4 ${selected === opt ? 'bg-white shadow-xl' : 'bg-slate-50'}`} 
+                     <button key={i} onClick={() => {
+                        onAnswer(idx, opt);
+                        // 點選後加上微小延遲讓使用者看到已選取的顏色，然後自動前往下一題
+                        setTimeout(() => handleNext(opt), 250);
+                      }} 
+                      className={`w-full p-4 rounded-[1.5rem] text-left font-black border-2 transition-all flex items-center gap-4 ${selected === opt ? 'bg-white shadow-xl scale-[1.02]' : 'bg-slate-50 hover:bg-slate-100 hover:border-slate-300'}`} 
                       style={{ borderColor: selected === opt ? color : '#f1f5f9', fontSize: `${session.optionFontSize}px` }}>
+                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${selected === opt ? 'border-transparent' : 'border-slate-300'}`} style={{ backgroundColor: selected === opt ? color : 'transparent' }}>
+                          {selected === opt && <Icon name="Check" size={14} color="#fff" strokeWidth={4} />}
+                        </div>
                         <span className="flex-1">{opt}</span>
                      </button>
                    ))}
@@ -1658,11 +1677,19 @@ ${qaText}`;
                ) : <textarea value={selected} onChange={e=>onAnswer(idx, e.target.value)} className="w-full p-6 bg-slate-50 border-2 rounded-[2rem] h-56 outline-none font-bold" />}
              </div>
           </div>
+          
+          {/* 按鈕區塊：移除下一步，保留上一題與文字題必要的送出按鈕 */}
           <div className="flex gap-5">
-             <button disabled={history.length <= 1} onClick={handlePrev} className="w-24 h-24 bg-white border-2 rounded-full flex items-center justify-center shadow-xl disabled:opacity-20"><Icon name="ChevronLeft" size={32} /></button>
-             <button onClick={handleNext} className="flex-1 h-24 text-white font-black text-2xl rounded-[3rem] shadow-2xl" style={{ backgroundColor: color }}>
-               {isLastStep ? '提交回覆' : '下一步'}
+             <button disabled={history.length <= 1} onClick={handlePrev} className="w-auto px-8 h-16 md:h-20 bg-white text-slate-600 font-black text-lg border-2 rounded-[2rem] flex items-center justify-center gap-2 shadow-lg disabled:opacity-30 hover:bg-slate-50 transition-colors">
+                <Icon name="ChevronLeft" size={24} /> 上一題
              </button>
+             
+             {/* 如果未來有非選擇題 (例如簡答題)，才需要顯示下一步按鈕 */}
+             {q?.type !== 'choice' && (
+               <button onClick={() => handleNext()} className="flex-1 h-16 md:h-20 text-white font-black text-xl md:text-2xl rounded-[2rem] shadow-xl hover:opacity-90 transition-opacity" style={{ backgroundColor: color }}>
+                 {q?.isEnd || idx + 1 >= session.questions.length ? '提交回覆' : '下一步'}
+               </button>
+             )}
           </div>
         </div>
       );
