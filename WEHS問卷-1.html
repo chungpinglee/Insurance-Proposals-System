@@ -235,7 +235,7 @@
         question: "【分流 A-2】為了盡早鎖定這份終身醫療帳戶，您希望何時請顧問為您準備正式的建議書與投保文件？", 
         options: ["1. 越快越好，這幾天就想確認", "2. 請顧問下週與我聯繫討論細節", "3. 我還有幾個小問題想先在 LINE 上確認"], 
         answer: "1", weight: 20, 
-        analysis: "測試「行動意願」，啟動成交流程。具體建議：<br><br><span class='text-indigo-600 font-bold'>【選1】</span> 絕對熱客。請在 24 小時內備妥文件赴約簽單。<br><span class='text-indigo-600 font-bold'>【選2】</span> 需安排明確日程，掛電話前務必確定「星期幾、幾點」。<br><span class='text-indigo-600 font-bold'>【選3】</span> 謹慎型。在 LINE 上有問必答，消除最後疑慮後立刻約訪。<br><br><span class='text-red-500 font-bold'>⚠️ 應注意事項：</span>客戶已準備購買，業務員需展現最高效率與專業度。", 
+        analysis: "測試「行動意願」，啟立成交流程。具體建議：<br><br><span class='text-indigo-600 font-bold'>【選1】</span> 絕對熱客。請在 24 小時內備妥文件赴約簽單。<br><span class='text-indigo-600 font-bold'>【選2】</span> 需安排明確日程，掛電話前務必確定「星期幾、幾點」。<br><span class='text-indigo-600 font-bold'>【選3】</span> 謹慎型。在 LINE 上有問必答，消除最後疑慮後立刻約訪。<br><br><span class='text-red-500 font-bold'>⚠️ 應注意事項：</span>客戶已準備購買，業務員需展現最高效率與專業度。", 
         isEnd: true 
       },
 
@@ -299,7 +299,12 @@
       const [showEditModal, setShowEditModal] = useState(false);
       const [bulkEditQuestions, setBulkEditQuestions] = useState([]);
       const [isClientLink, setIsClientLink] = useState(false);
+      
       const [showAdminPanel, setShowAdminPanel] = useState(false);
+      const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
+      const [adminPwdInput, setAdminPwdInput] = useState('');
+      const [pwdAttempts, setPwdAttempts] = useState(0);
+      const [isLockedOut, setIsLockedOut] = useState(false);
       
       useEffect(() => {
         const params = new URLSearchParams(window.location.search);
@@ -316,6 +321,25 @@
       const [showSettings, setShowSettings] = useState(false);
 
       const showToast = (msg) => { setToastMsg(msg); setTimeout(() => setToastMsg(''), 4000); };
+
+      const handleAdminLogin = () => {
+        if (adminPwdInput === '362963') {
+          setShowPasswordPrompt(false);
+          setShowAdminPanel(true);
+          setPwdAttempts(0);
+          setAdminPwdInput('');
+        } else {
+          const newAttempts = pwdAttempts + 1;
+          setPwdAttempts(newAttempts);
+          setAdminPwdInput('');
+          if (newAttempts >= 3) {
+            setShowPasswordPrompt(false);
+            setIsLockedOut(true);
+          } else {
+            showToast(`密碼錯誤！還有 ${3 - newAttempts} 次機會`);
+          }
+        }
+      };
 
       useEffect(() => {
         const initAuth = async () => {
@@ -569,6 +593,23 @@
         return exponentialBackoff();
       };
 
+      if (isLockedOut) {
+        return (
+          <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-4 text-center animate-in fade-in duration-500 font-sans">
+            <div className="bg-red-500/20 p-8 rounded-full mb-8 border-4 border-red-500/30">
+              <Icon name="ShieldAlert" size={64} className="text-red-500" />
+            </div>
+            <h1 className="text-3xl md:text-5xl font-black text-white mb-4 tracking-wider">系統已安全鎖定</h1>
+            <p className="text-red-400 font-bold text-lg mb-10 max-w-md leading-relaxed">
+              由於密碼錯誤達 3 次，基於安全考量，系統已自動暫停運作。請重新載入網頁以恢復連線。
+            </p>
+            <button onClick={() => window.location.reload()} className="px-8 py-4 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black shadow-2xl transition-all hover:scale-105">
+              重新載入系統
+            </button>
+          </div>
+        );
+      }
+
       return (
         <div className="min-h-screen flex flex-col font-sans">
           {toastMsg && <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[1000] bg-black text-white px-6 py-3 rounded-2xl font-black text-sm shadow-2xl animate-bounce">{toastMsg}</div>}
@@ -579,8 +620,14 @@
               <span className="hidden sm:inline">AI問卷客戶屬性分析</span>
             </h1>
             <div className="flex items-center gap-2">
-              {!role && (
-                <button onClick={() => setShowAdminPanel(!showAdminPanel)} className={`px-3 md:px-4 py-1.5 rounded-xl text-xs md:text-sm font-bold border transition-colors flex items-center gap-1 ${showAdminPanel ? 'bg-indigo-500 text-white border-indigo-400' : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'}`}>
+              {!role && !isClientLink && (
+                <button onClick={() => {
+                  if (showAdminPanel) {
+                    setShowAdminPanel(false);
+                  } else {
+                    setShowPasswordPrompt(true);
+                  }
+                }} className={`px-3 md:px-4 py-1.5 rounded-xl text-xs md:text-sm font-bold border transition-colors flex items-center gap-1 ${showAdminPanel ? 'bg-indigo-500 text-white border-indigo-400' : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'}`}>
                   <Icon name="ShieldCheck" size={16}/> <span className="hidden sm:inline">業務專區</span>
                 </button>
               )}
@@ -626,7 +673,7 @@
                       </div>
                     </div>
                     
-                    {showAdminPanel && (
+                    {showAdminPanel && !isClientLink && (
                       <div className="bg-indigo-900 p-8 md:p-12 rounded-[3.5rem] text-white flex flex-col justify-center shadow-2xl relative overflow-hidden animate-in fade-in zoom-in-95 duration-300">
                          <h2 className="text-2xl font-black mb-8 flex items-center gap-3 relative z-10"><Icon name="ShieldCheck" className="text-indigo-300"/> 業務決策端</h2>
                          
@@ -681,6 +728,32 @@
               </>
             )}
           </main>
+
+          {/* 密碼驗證框 */}
+          {showPasswordPrompt && (
+            <div className="fixed inset-0 bg-slate-900/95 z-[700] flex items-center justify-center p-4 backdrop-blur-md">
+              <div className="bg-white w-full max-w-sm p-8 rounded-[2.5rem] shadow-2xl flex flex-col gap-6 animate-in zoom-in-95">
+                <h3 className="text-2xl font-black text-slate-800 flex items-center gap-2"><Icon name="Lock" className="text-indigo-600"/> 業務驗證</h3>
+                <p className="text-sm text-slate-500 font-bold leading-relaxed">
+                  請輸入專屬密碼以啟用決策端。<br/>
+                  <span className="text-red-500">注意：錯誤 3 次將強制鎖定系統。</span>
+                </p>
+                <input 
+                  type="password" 
+                  placeholder="輸入密碼" 
+                  className="w-full p-4 bg-slate-50 border-2 rounded-2xl outline-none font-mono focus:border-indigo-500 transition-colors shadow-inner text-center text-2xl tracking-[0.5em]" 
+                  value={adminPwdInput} 
+                  onChange={e => setAdminPwdInput(e.target.value)} 
+                  onKeyDown={e => { if(e.key === 'Enter') handleAdminLogin(); }}
+                  autoFocus
+                />
+                <div className="flex gap-3">
+                  <button onClick={() => { setShowPasswordPrompt(false); setAdminPwdInput(''); }} className="flex-1 py-3 rounded-xl font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 transition-colors">取消</button>
+                  <button onClick={handleAdminLogin} className="flex-1 py-3 rounded-xl font-black text-white bg-indigo-600 shadow-lg hover:bg-indigo-700 transition-colors">解鎖</button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {showSettings && (
             <div className="fixed inset-0 bg-slate-900/95 z-[600] flex items-center justify-center p-4 backdrop-blur-md">
@@ -1012,7 +1085,7 @@
           ],
           qnaAnalysis: [
             { qIndex: 0, advice: "直接進入促結階段，無須再多做觀念溝通。", precautions: "不要再問他『為什麼想買』，會拖慢成交節奏。" },
-            { qIndex: 1, advice: "直接準備最高規格計畫四或五的建議書。", precautions: "不要主ড়ান্ত幫他降保額或省錢，會拉低格局。" },
+            { qIndex: 1, advice: "直接準備最高規格計畫四或五的建議書。", precautions: "不要主動幫他降保額或省錢，會拉低格局。" },
             { qIndex: 2, advice: "24小時內馬上帶著平板與要保書赴約。", precautions: "絕對不能拖延，熱度一過就會產生變數。" }
           ]
         },
