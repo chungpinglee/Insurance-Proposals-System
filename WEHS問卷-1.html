@@ -1,0 +1,1675 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>AI問卷客戶屬性分析</title>
+  
+  <meta property="og:title" content="AI問卷客戶屬性分析" />
+  <meta property="og:description" content="請讓我能更了解您的需求，並作為未來提供更優質、具體改進服務的參考 ✨" />
+  <meta property="og:type" content="website" />
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <style>
+    body { font-family: "Microsoft JhengHei", "微軟正黑體", sans-serif !important; }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+    .animate-shake { animation: shake 0.2s ease-in-out infinite; }
+    
+    button, .btn-mode, .btn-action { transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); cursor: pointer; }
+    button:not([disabled]):hover, 
+    .btn-action:hover,
+    .btn-mode:hover {
+      background-color: #10b981 !important; 
+      color: #ffffff !important; 
+      transform: scale(1.05) !important; 
+      box-shadow: 0 15px 30px -10px rgba(16, 185, 129, 0.5);
+    }
+    
+    .btn-active-red { background-color: #ef4444 !important; color: white !important; transform: scale(1.05) !important; box-shadow: 0 20px 30px -10px rgba(239, 68, 68, 0.4); border: 4px solid #fca5a5 !important; opacity: 1 !important; }
+    .btn-inactive-shrink { transform: scale(0.9) !important; opacity: 0.4; filter: grayscale(0.8); }
+    .btn-default-green { background-color: #10b981 !important; color: white !important; border-color: transparent; }
+    
+    input[type="range"] { height: 6px; -webkit-appearance: none; background: #e2e8f0; border-radius: 5px; cursor: pointer; border: none; }
+    input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; background: #4f46e5; border-radius: 50%; cursor: pointer; border: 3px solid white; box-shadow: 0 1px 4px rgba(0,0,0,0.3); transition: transform 0.1s; }
+    input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+    
+    input[type="color"] { -webkit-appearance: none; border: none; padding: 0; overflow: hidden; }
+    input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+    input[type="color"]::-webkit-color-swatch { border: none; border-radius: 0.5rem; }
+    
+    .font-msjh-black-large { font-family: "Microsoft JhengHei", "微軟正黑體", sans-serif !important; color: #000000 !important; font-size: 1.25rem !important; line-height: 1.6 !important; font-weight: 800 !important; }
+    
+    .theory-term { 
+      text-decoration: underline dotted #4f46e5; 
+      cursor: help; 
+      position: relative; 
+      color: #1e3a8a; 
+      display: inline-block;
+      font-weight: 900; 
+      padding: 0 2px;
+      transition: background 0.2s, border-radius 0.2s;
+    }
+    
+    .theory-term:hover, .theory-term:active {
+      background-color: #e0e7ff;
+      border-radius: 4px;
+    }
+
+    .theory-term:hover::after, .theory-term:active::after {
+      content: attr(data-meaning);
+      position: absolute;
+      top: calc(100% + 8px); 
+      left: 0;
+      background: #0f172a;
+      color: #ffffff;
+      padding: 14px 18px;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      width: 260px;
+      white-space: normal;
+      box-shadow: 0 15px 30px -10px rgba(0,0,0,0.6);
+      z-index: 100000;
+      font-weight: 400;
+      line-height: 1.6;
+      text-align: left;
+      pointer-events: none; 
+    }
+
+    .theory-term:hover::before, .theory-term:active::before {
+      content: '';
+      position: absolute;
+      top: calc(100% + 1px);
+      left: 10px;
+      border-width: 0 7px 7px 7px;
+      border-style: solid;
+      border-color: transparent transparent #0f172a transparent;
+      z-index: 100000;
+      pointer-events: none;
+    }
+    
+    .analysis-advice { color: #1d4ed8 !important; font-weight: 900; margin-top: 1rem; display: block; border-top: 2px dashed #bfdbfe; padding-top: 0.5rem; font-size: 1.3rem; }
+
+    @media print {
+      body { 
+        background-color: white !important; 
+        -webkit-print-color-adjust: exact !important; 
+        print-color-adjust: exact !important; 
+      }
+      .print\:hidden { display: none !important; }
+      .print\:w-full { width: 100% !important; max-width: none !important; }
+      .print\:block { display: block !important; }
+      .print\:border-none { border: none !important; }
+      .print\:shadow-none { box-shadow: none !important; }
+      .print\:p-0 { padding: 0 !important; }
+      .print\:m-0 { margin: 0 !important; }
+      .print\:min-h-0 { min-height: 0 !important; }
+      .print\:pb-0 { padding-bottom: 0 !important; }
+      .print-break-inside-avoid { break-inside: avoid; page-break-inside: avoid; }
+      main { overflow: visible !important; height: auto !important; }
+      #root { overflow: visible !important; height: auto !important; }
+      
+      .theory-term {
+        text-decoration: none !important;
+        color: #0f172a !important;
+      }
+      .theory-term::after { 
+        content: " （" attr(data-meaning) "） " !important;
+        position: static !important;
+        display: inline !important;
+        background: transparent !important;
+        color: #475569 !important; 
+        font-size: 0.85em !important;
+        font-weight: normal !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+        width: auto !important;
+        pointer-events: auto !important;
+      }
+      .theory-term::before { display: none !important; content: none !important; }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 overflow-x-hidden">
+  <div id="root"></div>
+
+  <script>
+    window.__app_id = "wehs-pro-v16";
+    window.__firebase_config = JSON.stringify({
+      apiKey: "AIzaSyBmJrLP_ETdJaW3s3Ta6fNencdTRbRBo5g",
+      authDomain: "ai-survey-38d53.firebaseapp.com",
+      projectId: "ai-survey-38d53",
+      storageBucket: "ai-survey-38d53.firebasestorage.app",
+      messagingSenderId: "207401879165",
+      appId: "1:207401879165:web:1f8d6d35deac1c77681314"
+    });
+  </script>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+    import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+    // 新增 deleteDoc
+    import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection, getDoc, query } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+
+    try {
+      if (typeof __firebase_config !== 'undefined') {
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const firebaseApp = initializeApp(firebaseConfig);
+        const auth = getAuth(firebaseApp);
+        const db = getFirestore(firebaseApp);
+
+        window.fb = { 
+          auth, db, doc, setDoc, deleteDoc, onSnapshot, collection, getDoc, query,
+          signInAnonymously, onAuthStateChanged, signInWithCustomToken 
+        };
+      }
+    } catch(e) {
+      console.warn("未偵測到 Firebase 環境，將啟用本地測試模式");
+    }
+  </script>
+
+  <script type="text/babel">
+    const { useState, useEffect, useMemo, useRef, useCallback } = React;
+
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'wehs-pro-v16';
+    const FIXED_CODE = "1234";
+    
+    let defaultApiKey = "AIzaSyBRZXUT4zuvgoaK1a4IS60gN9M_PxMjhHE"; 
+
+    const THEORY_DICTIONARY = {
+      "認知負荷理論": "指大腦處理資訊的容量有限。題目或介面過於繁雜時，客戶會產生「認知疲勞」導致隨意填寫或中途放棄。",
+      "雙碼理論": "指人類大腦同時利用語言（文字）與非語言（視覺）系統處理訊息，適度加入影像或 Emoji 能讓資訊更易吸收。",
+      "風險心理學": "研究人類在面對未來不確定風險時的感知差異。成功的題目應有效觸發客戶內在的「不安感」以產生購買動機。",
+      "損失規避": "行為經濟學指出，人們在面對同等數額的獲得和損失時，損失帶來的痛苦感通常是獲得所帶來快樂感的 2 倍以上。",
+      "銷售漏斗": "描述潛客戶從獲取初步資訊到最終成交各階段的行為模型，用於篩選最精準的跟進對象。",
+      "錨點效應": "心理學現象，指人類在進行決策時，會過度依賴第一時間收到的資訊（即「錨點」）作為判斷基準。",
+      "情感啟發法": "指人們在面對複雜決策時，傾向依賴當下的情緒反應與直覺，而非進行繁瑣的數據邏輯運算。",
+      "PERSONA": "人物誌（Persona）是為了幫助理解目標客群而創建的半虛構角色，用於具象化客戶的背景、痛點、需求與行為模式。",
+      "MBTI": "邁爾斯-布里格斯性格分類指標（MBTI），將人分為16種性格傾向，幫助業務員判斷客戶是理性分析型還是感性導向型，進而調整溝通頻率。",
+      "DISC": "人類行為語言分類，分為掌控型(D)、影響型(I)、穩定型(S)、分析型(C)，用於快速辨識客戶的決策速度與互動偏好。",
+      "心理地圖與動機": "指客戶大腦中對於某事物的潛在認知結構與情緒捷徑，了解心理地圖能幫助業務員預判客戶的內在動機與抗拒點。"
+    };
+
+    const DEFAULT_DISPLAY_TITLE = "請讓我能更了解您的需求，並作為未來提供更優質、具體改進服務的參考 ✨ 謝謝您的回覆！🙌🌱";
+    const DEFAULT_TITLE_COLOR = "#10b981"; 
+    const DEFAULT_Q_FONT_SIZE = 28;
+    const DEFAULT_OPT_FONT_SIZE = 18;
+
+    // 分流版自訂題目庫
+    const WEHS_DEFAULT_QUESTIONS = [
+      { 
+        id: 1, type: "choice", 
+        question: "【核心意願探詢】看完前面的實際理賠案例與費率試算後，您認為這份『終身帳戶型實支實付保險』，是否可以有效改善老年的醫療品質，並降低因龐大醫療支出帶來的不安全感？", 
+        options: [
+          "1. 是的，非常認同！這正是我需要的保障，希望能進一步討論專屬規劃。 (選項A)", 
+          "2. 認同它的價值，但目前有「預算考量」或「想先檢視現有保單」是否重複。 (選項B)", 
+          "3. 覺得還好 / 不需要，我打算用自身的「存款或理財規劃」來應對未來的醫療風險。 (選項C)"
+        ], 
+        answer: "1", weight: 20, 
+        analysis: "利用「銷售漏斗」理論直接過濾熱客、溫客與冷客。具體建議：<br><br><span class='text-indigo-600 font-bold'>【選1】</span> A級熱客！高度意願，直接引導預算與方案。<br><span class='text-indigo-600 font-bold'>【選2】</span> B級猶豫客。痛點卡在預算或舊保單，轉向保單健診與客製化。<br><span class='text-indigo-600 font-bold'>【選3】</span> C級冷客。防衛心重，需用引導式提問打破理財盲點。<br><br><span class='text-red-500 font-bold'>⚠️ 應注意事項：</span>切忌對選3的客戶進行強迫推銷，應採取顧問式諮詢姿態。", 
+        jumpLogic: {0: 1, 1: 3, 2: 5} // 分流導航核心設定
+      },
+      
+      // 分流 A (Index 1, 2)
+      { 
+        id: 2, type: "choice", 
+        question: "【分流 A-1】根據剛剛的 WEHS 費率查詢系統，您目前心裡比較傾向哪一種計畫額度？", 
+        options: ["1. 計畫一 (基礎守護，先求有再求好)", "2. 計畫二 / 計畫三 (進階防護，醫療品質更有感)", "3. 計畫四 / 計畫五 (頂級醫療，面對癌症新藥完全免煩惱)"], 
+        answer: "2", weight: 15, 
+        analysis: "運用「錨點效應」確認客戶的購買層級與預算落點。具體建議：<br><br><span class='text-indigo-600 font-bold'>【選1】</span> 務實型客戶。以計畫一為主推，不需額外加碼造成反感。<br><span class='text-indigo-600 font-bold'>【選2】</span> 中產防護型。追求高CP值與實用性，可附加部分小額日額險。<br><span class='text-indigo-600 font-bold'>【選3】</span> 頂級客群。直接準備最高規格建議書，強調尊榮理賠服務。<br><br><span class='text-red-500 font-bold'>⚠️ 應注意事項：</span>確認層級後，下階段請直接進入促結，無須多餘廢話。", 
+        jumpLogic: {0: 2, 1: 2, 2: 2} 
+      },
+      { 
+        id: 3, type: "choice", 
+        question: "【分流 A-2】為了盡早鎖定這份終身醫療帳戶，您希望何時請顧問為您準備正式的建議書與投保文件？", 
+        options: ["1. 越快越好，這幾天就想確認", "2. 請顧問下週與我聯繫討論細節", "3. 我還有幾個小問題想先在 LINE 上確認"], 
+        answer: "1", weight: 20, 
+        analysis: "測試「行動意願」，啟動成交流程。具體建議：<br><br><span class='text-indigo-600 font-bold'>【選1】</span> 絕對熱客。請在 24 小時內備妥文件赴約簽單。<br><span class='text-indigo-600 font-bold'>【選2】</span> 需安排明確日程，掛電話前務必確定「星期幾、幾點」。<br><span class='text-indigo-600 font-bold'>【選3】</span> 謹慎型。在 LINE 上有問必答，消除最後疑慮後立刻約訪。<br><br><span class='text-red-500 font-bold'>⚠️ 應注意事項：</span>客戶已準備購買，業務員需展現最高效率與專業度。", 
+        isEnd: true 
+      },
+
+      // 分流 B (Index 3, 4)
+      { 
+        id: 4, type: "choice", 
+        question: "【分流 B-1】了解您的考量！請問讓您目前需要再評估的「最主要原因」是什麼呢？", 
+        options: ["1. 預算問題（覺得保費有點超出目前的規劃）", "2. 重疊疑慮（我不確定以前買的醫療險是不是已經夠賠了）", "3. 決策問題（這筆支出比較大，需要跟家人討論一下）"], 
+        answer: "2", weight: 15, 
+        analysis: "運用「風險心理學」挖掘真實抗拒點。具體建議：<br><br><span class='text-indigo-600 font-bold'>【選1】</span> 價格抗拒。準備拆單方案或較低額度計畫。<br><span class='text-indigo-600 font-bold'>【選2】</span> 資訊不對稱。此為最佳突破口，以「保單健診」為名義見面。<br><span class='text-indigo-600 font-bold'>【選3】</span> 需共同決策。建議下次見面時邀請其配偶一同參與討論。<br><br><span class='text-red-500 font-bold'>⚠️ 應注意事項：</span>不要在當下強勢反駁，先認同並理解其難處。", 
+        jumpLogic: {0: 4, 1: 4, 2: 4} 
+      },
+      { 
+        id: 5, type: "choice", 
+        question: "【分流 B-2】如果顧問能提供「免費的舊保單條款檢視（找出缺口）」，或根據您的預算進行「客製化微調」，您會願意花 15 分鐘了解看看嗎？", 
+        options: ["1. 好，我願意先做舊保單健診，看看缺口在哪", "2. 好，請幫我用每月 OOOO 元的預算重新搭配看看", "3. 我先自己想一下，有需要再主動聯繫"], 
+        answer: "1", weight: 15, 
+        analysis: "透過「損失規避」心理，提供低風險的下一步行動。具體建議：<br><br><span class='text-indigo-600 font-bold'>【選1】</span> 成功引導至健診流程。請客戶準備實體保單，找出 75 歲斷保證據。<br><span class='text-indigo-600 font-bold'>【選2】</span> 成功轉向客製化。需主動詢問其可接受的每月預算數字。<br><span class='text-indigo-600 font-bold'>【選3】</span> 進入觀察名單。不勉強，定時發送相關醫療時事維持熱度。<br><br><span class='text-red-500 font-bold'>⚠️ 應注意事項：</span>提供服務時需保持客觀，切勿一開始就批評別家的舊保單。", 
+        isEnd: true 
+      },
+
+      // 分流 C (Index 5, 6)
+      { 
+        id: 6, type: "choice", 
+        question: "【分流 C-1】佩服您有良好的理財習慣！但若未來真的面臨如簡報中「單次高達數百萬的標靶藥物或達文西手術」，您預計會優先動用哪方面的資產來支付？", 
+        options: ["1. 原本存下來的退休養老金或定存", "2. 變賣手邊的股票、基金或房地產", "3. 其實還沒認真想過遇到這麼大筆支出的情況..."], 
+        answer: "3", weight: 10, 
+        analysis: "利用「情感啟發法」點出理財盲點與隱藏風險。具體建議：<br><br><span class='text-indigo-600 font-bold'>【選1】</span> 點出「退休金被醫療費侵蝕」的長壽風險，這會大幅降低生活品質。<br><span class='text-indigo-600 font-bold'>【選2】</span> 點出「急病時資產變現可能面臨折價損失」的風險。<br><span class='text-indigo-600 font-bold'>【選3】</span> 成功植入風險意識。客戶開始反思，可順勢帶入下一題的槓桿觀念。<br><br><span class='text-red-500 font-bold'>⚠️ 應注意事項：</span>全程需保持讚賞其理財觀念的態度，切忌用說教語氣。", 
+        jumpLogic: {0: 6, 1: 6, 2: 6} 
+      },
+      { 
+        id: 7, type: "choice", 
+        question: "【分流 C-2】如果有一種財務槓桿工具，「只需用小額的利息錢，就能鎖定千萬級別的醫療專用帳戶」，完全不會侵蝕到您辛苦累積的本金與退休金，您會抱持開放的態度了解一下這個概念嗎？", 
+        options: ["1. 聽起來不錯，可以傳些資料給我看看", "2. 好，可以簡單跟我說明一下這個財務邏輯", "3. 不用了，我對自己的理財配置很有信心"], 
+        answer: "1", weight: 10, 
+        analysis: "重塑產品價值，將保險包裝為「資產防護槓桿工具」。具體建議：<br><br><span class='text-indigo-600 font-bold'>【選1】</span> 破冰成功。傳送精簡版概念圖或新聞稿，勿直接給繁雜的建議書。<br><span class='text-indigo-600 font-bold'>【選2】</span> 成功引發好奇。用「理財放大鏡」的概念，向他展示保費與理賠金的槓桿比。<br><span class='text-indigo-600 font-bold'>【選3】</span> 絕對鐵齒客。維持良好關係，不提保險，可分享純粹的財經或稅務資訊。<br><br><span class='text-red-500 font-bold'>⚠️ 應注意事項：</span>與這類客戶溝通時，多用「投資、槓桿、保全資產」等理財術語，少用「生病、理賠」等傳統保險詞彙。", 
+        isEnd: true 
+      }
+    ];
+
+    const Icon = ({ name, size = 24, className = "", color = "currentColor", strokeWidth = 2, style = {} }) => {
+      const iconNodes = lucide.icons[name];
+      if (!iconNodes) return null;
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={`lucide lucide-${name.toLowerCase()} ${className}`} style={style} xmlns="http://www.w3.org/2000/svg">
+          {iconNodes.map(([tag, attrs], i) => React.createElement(tag, { ...attrs, key: i }))}
+        </svg>
+      );
+    };
+
+    function App() {
+      const [user, setUser] = useState(null);
+      const [role, setRole] = useState(null); 
+      const [sessionCode, setSessionCode] = useState(FIXED_CODE); 
+      const [studentName, setStudentName] = useState('');
+      const [sessionData, setSessionData] = useState(null);
+      const [allAnswersData, setAllAnswersData] = useState([]);
+      const [errorMsg, setErrorMsg] = useState('');
+      const [toastMsg, setToastMsg] = useState('');
+      const [view, setView] = useState('main'); 
+      const [showEditModal, setShowEditModal] = useState(false);
+      const [bulkEditQuestions, setBulkEditQuestions] = useState([]);
+      const [isClientLink, setIsClientLink] = useState(false);
+      
+      useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const urlCode = params.get('code');
+        if (urlCode) {
+          setSessionCode(urlCode.toUpperCase());
+          setIsClientLink(true); 
+        }
+      }, []);
+
+      const [apiKey, setApiKey] = useState(() => {
+        try { return localStorage.getItem('gemini_api_key') || defaultApiKey; } catch(e) { return defaultApiKey; }
+      });
+      const [showSettings, setShowSettings] = useState(false);
+
+      const showToast = (msg) => { setToastMsg(msg); setTimeout(() => setToastMsg(''), 4000); };
+
+      useEffect(() => {
+        const initAuth = async () => {
+          let attempts = 0;
+          const checkFB = setInterval(async () => {
+            attempts++;
+            if (window.fb) {
+              clearInterval(checkFB);
+              try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                  try {
+                    await window.fb.signInWithCustomToken(window.fb.auth, __initial_auth_token);
+                  } catch (tokenErr) {
+                    console.warn("登入失敗，切換為匿名登入", tokenErr);
+                    await window.fb.signInAnonymously(window.fb.auth);
+                  }
+                } else {
+                  await window.fb.signInAnonymously(window.fb.auth);
+                }
+                
+                window.fb.onAuthStateChanged(window.fb.auth, (u) => {
+                  if (u) setUser(u);
+                  else setUser({ uid: 'local_user' });
+                });
+              } catch (e) { 
+                console.error("Auth Error:", e); 
+                setUser({ uid: 'local_user' }); 
+              }
+            } else if (attempts > 30) {
+              clearInterval(checkFB);
+              setUser({ uid: 'local_user' });
+            }
+          }, 100);
+        };
+        initAuth();
+      }, []);
+
+      useEffect(() => {
+        if (!user || !sessionCode || !window.fb || user.uid === 'local_user') return;
+        
+        const sRef = window.fb.doc(window.fb.db, 'artifacts', appId, 'public', 'data', 'sessions', sessionCode);
+        const unsubS = window.fb.onSnapshot(
+          sRef, 
+          (snap) => {
+            if (snap.exists()) setSessionData(snap.data());
+          }, 
+          (err) => console.warn("Session 監聽錯誤:", err.message)
+        );
+
+        const aRef = window.fb.collection(window.fb.db, 'artifacts', appId, 'public', 'data', 'answers');
+        const unsubA = window.fb.onSnapshot(
+          window.fb.query(aRef), 
+          (snap) => {
+            const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            setAllAnswersData(docs.filter(a => a.sessionId === sessionCode));
+          }, 
+          (err) => console.warn("Answers 監聽錯誤:", err.message)
+        );
+        
+        return () => { unsubS(); unsubA(); };
+      }, [user, sessionCode]);
+
+      const handleCreate = async (type) => {
+        const newCode = type === 'fixed' ? FIXED_CODE : Math.random().toString(36).substring(2, 6).toUpperCase();
+        const initialData = {
+          hostId: user ? user.uid : 'local_host',
+          code: newCode,
+          status: 'lobby',
+          quizTitle: DEFAULT_DISPLAY_TITLE,
+          quizTitleColor: DEFAULT_TITLE_COLOR,
+          titleFontSize: 24,
+          questionFontSize: DEFAULT_Q_FONT_SIZE,
+          optionFontSize: DEFAULT_OPT_FONT_SIZE,
+          timeLimit: 0,
+          autoCloseUnit: 'none',
+          autoCloseValue: 1,
+          autoCloseTimestamp: null,
+          startedAt: null,
+          questions: WEHS_DEFAULT_QUESTIONS,
+          scoringMode: 'even',
+          createdAt: Date.now(),
+          codeOption: type
+        };
+
+        if (window.fb && user && user.uid !== 'local_user') {
+          try {
+            const docRef = window.fb.doc(window.fb.db, 'artifacts', appId, 'public', 'data', 'sessions', newCode);
+            await window.fb.setDoc(docRef, initialData, { merge: true });
+          } catch (e) {
+            setErrorMsg("建立失敗，請檢查權限設定");
+            return;
+          }
+        }
+
+        setSessionCode(newCode);
+        setSessionData(initialData);
+        setRole('instructor');
+        showToast(window.fb && user.uid !== 'local_user' ? `會話 ${newCode} 已建立` : `已啟動本地會話 ${newCode}`);
+      };
+
+      const handleJoin = async (code, name) => {
+        if (!name || !code) return setErrorMsg('請輸入姓名與代碼');
+        const c = code.trim().toUpperCase();
+        const studentId = user ? `${user.uid}_${name}` : `local_${name}`;
+
+        if (window.fb && user && user.uid !== 'local_user') {
+          try {
+            const snap = await window.fb.getDoc(window.fb.doc(window.fb.db, 'artifacts', appId, 'public', 'data', 'sessions', c));
+            if (!snap.exists()) return setErrorMsg('找不到該代碼');
+            const aRef = window.fb.doc(window.fb.db, 'artifacts', appId, 'public', 'data', 'answers', `${c}_${studentId}`);
+            await window.fb.setDoc(aRef, { sessionId: c, studentId, studentName: name, answers: {}, status: 'in_progress', joinedAt: Date.now() }, { merge: true });
+          } catch (e) { return setErrorMsg("加入失敗，連線異常"); }
+        }
+
+        setSessionCode(c); 
+        setStudentName(name); 
+        setRole('student');
+        
+        if (!sessionData) {
+          setSessionData({ 
+            questions: WEHS_DEFAULT_QUESTIONS, status: 'lobby', quizTitleColor: DEFAULT_TITLE_COLOR, 
+            titleFontSize: 24, questionFontSize: 28, optionFontSize: 18, timeLimit: 0, 
+            autoCloseUnit: 'none', autoCloseValue: 1, autoCloseTimestamp: null 
+          });
+        }
+        setAllAnswersData(prev => {
+          if(!prev.find(p => p.studentId === studentId)) {
+            return [...prev, { sessionId: c, studentId, studentName: name, answers: {}, status: 'in_progress' }];
+          }
+          return prev;
+        });
+      };
+
+      const handleExportFullData = () => {
+        if (!sessionData) return;
+        const now = new Date();
+        const mYear = now.getFullYear() - 1911;
+        const mDate = `${mYear}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}`;
+        const filename = `${mDate}問卷備份.json`;
+        
+        const blob = new Blob([JSON.stringify({ appId, session: sessionData, answers: allAnswersData, exportedAt: now.toISOString() }, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
+        showToast(`數據包已匯出：${filename}`);
+      };
+
+      const handleImportFullData = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+          try {
+            const data = JSON.parse(event.target.result);
+            if (data.session && data.session.code) {
+              if (window.fb && user && user.uid !== 'local_user') {
+                const sRef = window.fb.doc(window.fb.db, 'artifacts', appId, 'public', 'data', 'sessions', data.session.code);
+                await window.fb.setDoc(sRef, data.session, { merge: true });
+
+                if (data.answers && Array.isArray(data.answers)) {
+                  for (const ans of data.answers) {
+                    const aRef = window.fb.doc(window.fb.db, 'artifacts', appId, 'public', 'data', 'answers', ans.id || `${data.session.code}_${ans.studentId}`);
+                    await window.fb.setDoc(aRef, ans, { merge: true });
+                  }
+                }
+              }
+
+              setSessionData(data.session);
+              if(data.answers) setAllAnswersData(data.answers);
+              setSessionCode(data.session.code);
+              setRole('instructor');
+              showToast("數據包恢復成功");
+            }
+          } catch (err) { 
+            console.error(err);
+            showToast("解析失敗"); 
+          }
+        };
+        reader.readAsText(file);
+      };
+
+      const renderAnalysisText = (text, isInline = false) => {
+        if (!text) return null;
+        let processed = text;
+        const sortedTerms = Object.keys(THEORY_DICTIONARY).sort((a, b) => b.length - a.length);
+        sortedTerms.forEach(term => {
+          const regex = new RegExp(term, 'g');
+          const definition = THEORY_DICTIONARY[term];
+          processed = processed.replace(regex, `<span class="theory-term" data-meaning="${definition}" title="${definition}">${term}</span>`);
+        });
+
+        if (isInline) {
+          return <span dangerouslySetInnerHTML={{ __html: processed }} />;
+        }
+
+        const parts = processed.split('具體建議：');
+        if (parts.length > 1) {
+          return (
+            <div className="font-msjh-black-large">
+              <span dangerouslySetInnerHTML={{ __html: parts[0] }} />
+              <div className="analysis-advice">具體建議：<span dangerouslySetInnerHTML={{ __html: parts[1] }} /></div>
+            </div>
+          );
+        }
+        return <div className="font-msjh-black-large" dangerouslySetInnerHTML={{ __html: processed }} />;
+      };
+
+      const callGeminiAPI = async (prompt, requireJson = false) => {
+        const activeKey = ""; 
+        const modelName = "gemini-2.5-flash-preview-09-2025";
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${activeKey}`;
+        
+        const payload = { 
+          contents: [{ parts: [{ text: prompt }] }] 
+        };
+
+        if (requireJson) {
+           payload.generationConfig = { responseMimeType: "application/json" };
+        }
+
+        const exponentialBackoff = async (attempt = 0) => {
+          try {
+            const res = await fetch(url, {
+               method: 'POST',
+               headers: { 'Content-Type': 'application/json' },
+               body: JSON.stringify(payload)
+            });
+
+            if (!res.ok) {
+              const errData = await res.json();
+              throw new Error(errData.error?.message || `API Error: ${res.status}`);
+            }
+
+            const data = await res.json();
+            if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
+               return data.candidates[0].content.parts[0].text;
+            }
+            throw new Error("API 未回傳有效結果");
+          } catch (err) {
+            if (attempt < 3) {
+              const delay = Math.pow(2, attempt) * 1000;
+              await new Promise(resolve => setTimeout(resolve, delay));
+              return exponentialBackoff(attempt + 1);
+            }
+            throw err;
+          }
+        };
+
+        return exponentialBackoff();
+      };
+
+      return (
+        <div className="min-h-screen flex flex-col font-sans">
+          {toastMsg && <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[1000] bg-black text-white px-6 py-3 rounded-2xl font-black text-sm shadow-2xl animate-bounce">{toastMsg}</div>}
+          
+          <header className="bg-slate-900 text-white p-4 shadow-xl flex justify-between items-center shrink-0 sticky top-0 z-50 print:hidden">
+            <h1 className="font-black flex items-center gap-2 text-base md:text-xl tracking-tighter">
+              <Icon name="ListChecks" className="text-indigo-500" size={24}/>
+              <span className="hidden sm:inline">AI問卷客戶屬性分析</span>
+            </h1>
+            <div className="flex items-center gap-2">
+              {role === 'instructor' && (
+                <button onClick={() => setShowSettings(true)} className="bg-indigo-500/20 text-indigo-300 px-3 md:px-4 py-1.5 rounded-xl text-xs md:text-sm font-bold border border-indigo-500/30 flex items-center gap-1 hover:bg-indigo-500/40 transition-colors">
+                  <Icon name="Settings" size={16}/> <span className="hidden sm:inline">API 設定</span>
+                </button>
+              )}
+              {role && <button onClick={() => {setRole(null); setView('main');}} className="bg-red-500/10 text-red-500 px-3 md:px-4 py-1.5 rounded-xl text-xs md:text-sm font-bold border border-red-500/20 hover:bg-red-500/20 transition-colors">登出</button>}
+            </div>
+          </header>
+
+          <main className="flex-1 max-w-7xl mx-auto p-4 md:p-8 w-full overflow-y-auto">
+            {view === 'analysis' && sessionData ? (
+              <AnalysisView 
+                session={sessionData} 
+                answers={allAnswersData} 
+                onBack={() => setView('main')} 
+                showToast={showToast} 
+                sessionCode={sessionCode}
+                setSessionData={setSessionData}
+                renderAnalysisText={renderAnalysisText}
+                apiKey={apiKey}
+                user={user}
+                callGeminiAPI={callGeminiAPI}
+              />
+            ) : (
+              <>
+                {!role && (
+                  <div className={`mx-auto grid gap-8 mt-10 animate-in fade-in slide-in-from-bottom-4 duration-500 ${isClientLink ? 'max-w-md grid-cols-1' : 'max-w-4xl md:grid-cols-2'}`}>
+                    <div className="bg-white p-8 md:p-12 rounded-[3.5rem] shadow-2xl border flex flex-col justify-center">
+                      <div className="mb-8">
+                        <h2 className="font-black mb-4 leading-tight flex items-start gap-2" style={{ color: sessionData?.quizTitleColor || DEFAULT_TITLE_COLOR, fontSize: `${sessionData?.titleFontSize || 24}px` }}>
+                          <Icon name="Star" size={sessionData?.titleFontSize || 24} className="shrink-0 mt-1"/>
+                          <span>{sessionData?.quizTitle || DEFAULT_DISPLAY_TITLE}</span>
+                        </h2>
+                      </div>
+                      <div className="space-y-4">
+                        <input type="text" placeholder="您的姓名" className="w-full p-5 bg-slate-50 border-2 rounded-3xl outline-none font-bold text-lg shadow-inner focus:bg-white transition-all" value={studentName} onChange={e=>setStudentName(e.target.value)} />
+                        <input type="text" placeholder="代碼" className="w-full p-5 bg-slate-50 border-2 rounded-3xl font-mono uppercase text-lg shadow-inner focus:bg-white transition-all disabled:opacity-50 disabled:bg-slate-100" value={sessionCode} onChange={e=>setSessionCode(e.target.value)} disabled={isClientLink} />
+                        {errorMsg && <p className="text-red-500 text-xs font-bold pl-4">{errorMsg}</p>}
+                        <button onClick={()=>handleJoin(sessionCode, studentName)} className="w-full py-5 rounded-3xl text-white font-black text-xl shadow-xl transition-all" style={{ backgroundColor: sessionData?.quizTitleColor || DEFAULT_TITLE_COLOR }}>進入填答</button>
+                      </div>
+                    </div>
+                    
+                    {!isClientLink && (
+                      <div className="bg-indigo-900 p-8 md:p-12 rounded-[3.5rem] text-white flex flex-col justify-center shadow-2xl relative overflow-hidden">
+                         <h2 className="text-2xl font-black mb-8 flex items-center gap-3 relative z-10"><Icon name="ShieldCheck" className="text-indigo-300"/> 業務決策端</h2>
+                         
+                         <button onClick={() => handleCreate('fixed')} className="w-full bg-white text-indigo-900 font-black py-4 rounded-3xl shadow-xl mb-3 active:scale-95 transition-transform relative z-10">啟動固定代碼 (1234)</button>
+                         <button onClick={() => handleCreate('random')} className="w-full bg-indigo-600 text-white font-black py-4 rounded-3xl shadow-xl mb-4 active:scale-95 transition-transform relative z-10 border border-indigo-400 hover:bg-indigo-500">啟動隨機代碼</button>
+
+                         <label className="cursor-pointer bg-indigo-700 hover:bg-indigo-600 text-white text-center font-bold py-4 rounded-3xl text-xs flex items-center justify-center gap-2 border border-indigo-600 transition-all relative z-10">
+                           <Icon name="Upload" size={16}/> 匯入備份包 
+                           <input type="file" className="hidden" accept=".json" onChange={handleImportFullData} />
+                         </label>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {role === 'instructor' && sessionData && (
+                  <InstructorDashboard 
+                    session={sessionData} students={allAnswersData} code={sessionCode} showToast={showToast} 
+                    setSessionData={setSessionData}
+                    onGoAnalysis={() => setView('analysis')} onExport={handleExportFullData} 
+                    onOpenEdit={() => { if(!sessionData.questions) return; setBulkEditQuestions(JSON.parse(JSON.stringify(sessionData.questions))); setShowEditModal(true); }}
+                  />
+                )}
+
+                {role === 'student' && sessionData && (
+                   <StudentDashboard 
+                     session={sessionData} 
+                     myData={allAnswersData.find(a => a.studentId === (user ? `${user.uid}_${studentName}` : `local_${studentName}`))} 
+                     onAnswer={(idx, val) => {
+                       const studentId = user ? `${user.uid}_${studentName}` : `local_${studentName}`;
+                       if(window.fb && user && user.uid !== 'local_user') {
+                         const aRef = window.fb.doc(window.fb.db, 'artifacts', appId, 'public', 'data', 'answers', `${sessionCode}_${studentId}`);
+                         window.fb.setDoc(aRef, { answers: { [idx]: val } }, { merge: true });
+                       }
+                       setAllAnswersData(prev => prev.map(a => a.studentId === studentId ? { ...a, answers: { ...a.answers, [idx]: val } } : a));
+                     }} 
+                     onFinalSubmit={() => {
+                       const studentId = user ? `${user.uid}_${studentName}` : `local_${studentName}`;
+                       if(window.fb && user && user.uid !== 'local_user') {
+                         const aRef = window.fb.doc(window.fb.db, 'artifacts', appId, 'public', 'data', 'answers', `${sessionCode}_${studentId}`);
+                         window.fb.setDoc(aRef, { status: 'submitted', submittedAt: Date.now() }, { merge: true });
+                       }
+                       setAllAnswersData(prev => prev.map(a => a.studentId === studentId ? { ...a, status: 'submitted' } : a));
+                     }} 
+                   />
+                )}
+              </>
+            )}
+          </main>
+
+          {showSettings && (
+            <div className="fixed inset-0 bg-slate-900/95 z-[600] flex items-center justify-center p-4 backdrop-blur-md">
+              <div className="bg-white w-full max-w-md p-8 rounded-[2.5rem] shadow-2xl flex flex-col gap-6 animate-in zoom-in-95">
+                <h3 className="text-2xl font-black text-slate-800 flex items-center gap-2"><Icon name="Key"/> API 金鑰設定</h3>
+                <p className="text-sm text-slate-500 font-bold leading-relaxed">
+                  請輸入您的 Google Gemini API Key 以啟用分析功能。
+                </p>
+                <input 
+                  type="password" 
+                  placeholder="輸入您的 AIzaSy..." 
+                  className="w-full p-4 bg-slate-50 border-2 rounded-2xl outline-none font-mono focus:border-indigo-500 transition-colors shadow-inner" 
+                  value={apiKey} 
+                  onChange={e => setApiKey(e.target.value)} 
+                />
+                <div className="flex gap-3">
+                  <button onClick={() => setShowSettings(false)} className="flex-1 py-3 rounded-xl font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 transition-colors">關閉</button>
+                  <button onClick={() => { 
+                    try { localStorage.setItem('gemini_api_key', apiKey); } catch(e) {}
+                    setShowSettings(false); 
+                    showToast('API 設定已儲存成功'); 
+                  }} className="flex-1 py-3 rounded-xl font-black text-white bg-indigo-600 shadow-lg hover:bg-indigo-700 transition-colors">儲存設定</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {showEditModal && (
+            <div className="fixed inset-0 bg-slate-900/95 z-[500] flex items-center justify-center p-2 sm:p-4 backdrop-blur-md">
+               <div className="bg-white w-full max-w-6xl h-[95vh] md:h-[92vh] rounded-[2rem] md:rounded-[3rem] flex flex-col shadow-2xl overflow-hidden border-4 md:border-8 border-white animate-in zoom-in-95">
+                  <div className="p-4 md:p-8 border-b flex flex-col lg:flex-row justify-between items-start lg:items-center bg-indigo-50 gap-4 md:gap-6">
+                    <div className="flex flex-col xl:flex-row items-start xl:items-center gap-4 xl:gap-6 flex-1 w-full">
+                      <h3 className="text-xl md:text-2xl font-black text-indigo-900 flex items-center gap-2 shrink-0"><Icon name="Edit3" /> 修改問卷內容</h3>
+                      <div className="flex flex-col sm:flex-row items-center gap-4 bg-white/60 p-2 px-4 rounded-xl border border-indigo-100 shadow-sm w-full xl:w-auto">
+                         <div className="flex items-center gap-3 w-full sm:w-auto">
+                           <span className="text-sm font-bold text-indigo-700 shrink-0">標題大小</span>
+                           <input type="range" min="16" max="48" value={sessionData?.questionFontSize || 28} onChange={e => {
+                              const val = Number(e.target.value);
+                              if(window.fb && user && user.uid !== 'local_user') window.fb.setDoc(window.fb.doc(window.fb.db, 'artifacts', appId, 'public', 'data', 'sessions', sessionCode), {questionFontSize: val}, { merge: true });
+                              setSessionData(prev => ({...prev, questionFontSize: val}));
+                           }} className="w-24 md:w-32" />
+                           <span className="text-xs font-bold text-indigo-500 w-8">{sessionData?.questionFontSize || 28}px</span>
+                         </div>
+                         <div className="hidden sm:block w-px h-6 bg-indigo-200"></div>
+                         <div className="flex items-center gap-3 w-full sm:w-auto">
+                           <span className="text-sm font-bold text-indigo-700 shrink-0">選項大小</span>
+                           <input type="range" min="12" max="36" value={sessionData?.optionFontSize || 18} onChange={e => {
+                              const val = Number(e.target.value);
+                              if(window.fb && user && user.uid !== 'local_user') window.fb.setDoc(window.fb.doc(window.fb.db, 'artifacts', appId, 'public', 'data', 'sessions', sessionCode), {optionFontSize: val}, { merge: true });
+                              setSessionData(prev => ({...prev, optionFontSize: val}));
+                           }} className="w-24 md:w-32" />
+                           <span className="text-xs font-bold text-indigo-500 w-8">{sessionData?.optionFontSize || 18}px</span>
+                         </div>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 md:gap-3 w-full lg:w-auto mt-2 lg:mt-0 shrink-0">
+                      <button onClick={() => setShowEditModal(false)} className="flex-1 md:flex-none px-4 md:px-6 py-2 md:py-3 rounded-xl text-sm font-bold text-slate-400 bg-white border">放棄</button>
+                      <button onClick={async () => { 
+                        if(window.fb && user && user.uid !== 'local_user') await window.fb.setDoc(window.fb.doc(window.fb.db, 'artifacts', appId, 'public', 'data', 'sessions', sessionCode), { questions: bulkEditQuestions }, { merge: true }); 
+                        setSessionData(prev => ({...prev, questions: bulkEditQuestions}));
+                        setShowEditModal(false); 
+                        showToast('修改已儲存'); 
+                      }} className="flex-1 md:flex-none px-4 md:px-8 py-2 md:py-3 rounded-xl text-sm font-black text-white bg-indigo-600 shadow-lg active:scale-95 flex items-center justify-center gap-1"><Icon name="Save" size={18}/> 儲存</button>
+                    </div>
+                  </div>
+                  
+                  <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-16 space-y-6 md:space-y-10 custom-scrollbar bg-slate-50/30">
+                    {bulkEditQuestions.map((q, idx) => (
+                      <div key={idx} className="bg-white p-5 md:p-8 rounded-[2rem] md:rounded-[2.5rem] border-2 border-slate-100 shadow-sm flex flex-col lg:flex-row gap-6 md:gap-8">
+                        <div className="flex-1 space-y-6">
+                           <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+                              <div className="w-10 h-10 md:w-12 md:h-12 bg-indigo-600 text-white rounded-xl md:rounded-2xl flex items-center justify-center font-black text-lg md:text-xl shadow-md shrink-0">Q{idx+1}</div>
+                              <textarea className="flex-1 p-3 md:p-4 bg-slate-50 border-2 rounded-xl md:rounded-2xl outline-none font-bold text-slate-700 shadow-inner w-full" style={{ fontSize: `${sessionData.questionFontSize || 28}px` }} rows={2} value={q.question} onChange={e => { const n = [...bulkEditQuestions]; n[idx].question = e.target.value; setBulkEditQuestions(n); }} />
+                           </div>
+                           {q.type === 'choice' && (
+                             <div className="grid md:grid-cols-2 gap-3 md:gap-4 sm:pl-14 md:pl-16">
+                               {q.options.map((opt, oIdx) => (
+                                 <input key={oIdx} type="text" className="p-3 md:p-4 bg-white border-2 rounded-xl outline-none font-bold text-slate-700 shadow-sm focus:border-indigo-400 transition-all w-full" style={{ fontSize: `${sessionData.optionFontSize || 18}px` }} value={opt} onChange={e => { const n = [...bulkEditQuestions]; n[idx].options[oIdx] = e.target.value; setBulkEditQuestions(n); }} />
+                               ))}
+                             </div>
+                           )}
+                           <div className="grid grid-cols-2 gap-4 md:gap-6 pt-4 border-t border-slate-100 sm:pl-14 md:pl-16">
+                             <input type="text" className="p-3 md:p-4 bg-slate-50 border-2 rounded-xl font-bold text-indigo-600 w-full" value={q.answer} onChange={e => { const n = [...bulkEditQuestions]; n[idx].answer = e.target.value; setBulkEditQuestions(n); }} placeholder="答案 (1-4)"/>
+                             <input type="number" className="p-3 md:p-4 bg-slate-50 border-2 rounded-xl font-bold w-full" value={q.weight} onChange={e => { const n = [...bulkEditQuestions]; n[idx].weight = Number(e.target.value); setBulkEditQuestions(n); }} placeholder="權重"/>
+                           </div>
+                        </div>
+                        <div className="w-full lg:w-96 bg-indigo-50/50 p-5 md:p-6 rounded-2xl md:rounded-3xl border border-indigo-100 flex flex-col justify-between shadow-inner">
+                           <div>
+                              <h5 className="font-black text-indigo-700 mb-3 md:mb-4 text-lg md:text-xl flex items-center gap-2 border-b border-indigo-200 pb-2"><Icon name="BrainCircuit" size={20}/> AI 診斷</h5>
+                              <div className="overflow-y-auto max-h-48 md:max-h-72 pr-2 pb-4 custom-scrollbar">
+                                {renderAnalysisText(q.analysis || "尚未進行分析。")}
+                              </div>
+                           </div>
+                           <button onClick={async () => {
+                             const prompt = `你是保險心理學專家。分析題目「${q.question}」。包含理論分析。請嚴格遵循以下 HTML 格式輸出（不要使用 markdown）：\n\n[理論分析內容]\n具體建議：<br><br><span class='text-indigo-600 font-bold'>【選1】</span> [訴求對策]<br><span class='text-indigo-600 font-bold'>【選2】</span> [訴求對策]<br><span class='text-indigo-600 font-bold'>【選3】</span> [訴求對策]<br><span class='text-indigo-600 font-bold'>【選4】</span> [訴求對策]<br><br><span class='text-red-500 font-bold'>⚠️ 應注意事項：</span>[重要提醒]`;
+                             try {
+                               const text = await callGeminiAPI(prompt, false);
+                               let cleanText = text.replace(/```html/gi, '').replace(/```/g, '').trim();
+                               const n2 = [...bulkEditQuestions];
+                               n2[idx].analysis = cleanText;
+                               setBulkEditQuestions(n2);
+                             } catch(e) { 
+                               alert(`AI 診斷失敗：${e.message}`);
+                             }
+                           }} className="w-full py-3 md:py-4 bg-indigo-600 text-white rounded-xl md:rounded-2xl font-black text-sm mt-4 shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2"><Icon name="RefreshCw" size={16}/>重新 AI 診斷</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+               </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    function InstructorDashboard({ session, students, code, showToast, onGoAnalysis, onExport, onOpenEdit, setSessionData }) {
+      const updateSession = (data) => {
+        if(window.fb) window.fb.setDoc(window.fb.doc(window.fb.db, 'artifacts', appId, 'public', 'data', 'sessions', code), data, { merge: true }).catch(e=>console.log(e));
+        setSessionData(prev => ({...prev, ...data}));
+      };
+
+      const handleCopyLink = () => {
+        const url = `${window.location.origin}${window.location.pathname}?code=${code}`;
+        const shareText = `✨ 【AI問卷客戶屬性分析】\n邀請您協助填寫，請點選下方連結以開啟：\n${url}`;
+        const textArea = document.createElement("textarea");
+        textArea.value = shareText;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+        showToast('✅ 邀請連結與訊息已複製！');
+      };
+
+      return (
+        <div className="space-y-6 animate-in fade-in duration-500">
+          <div className="flex flex-col sm:flex-row gap-4">
+             <button onClick={onOpenEdit} className="flex-1 bg-white border-2 border-indigo-600 text-indigo-600 py-4 rounded-3xl font-black shadow-sm hover:bg-indigo-50">修改問卷內容</button>
+             <button onClick={onGoAnalysis} className="flex-1 bg-indigo-50 text-indigo-700 py-4 rounded-3xl font-black shadow-sm hover:bg-indigo-100 border border-indigo-200">策略決策面板</button>
+             <button onClick={onExport} className="w-full sm:w-auto bg-slate-900 text-white px-8 py-4 rounded-3xl font-black shadow-xl hover:bg-slate-800">匯出備份</button>
+          </div>
+
+          <div className="bg-indigo-50 p-6 md:p-8 rounded-[2.5rem] md:rounded-[3.5rem] border-2 border-indigo-100 shadow-sm flex flex-col md:flex-row justify-between items-center gap-6">
+             <div className="text-center md:text-left">
+                <h3 className="text-indigo-900 font-black text-lg md:text-xl mb-2 flex items-center justify-center md:justify-start gap-2"><Icon name="Share2" size={20}/> 邀請客戶</h3>
+                <p className="text-indigo-600/80 font-bold text-sm">代碼：<span className="bg-white px-2 py-1 rounded-lg border text-indigo-700 mx-1">{code}</span></p>
+             </div>
+             <button onClick={handleCopyLink} className="w-full md:w-auto bg-indigo-600 text-white px-8 py-4 rounded-2xl md:rounded-3xl font-black shadow-xl active:scale-95 flex items-center justify-center gap-3 hover:bg-indigo-700 transition-colors">
+               <Icon name="Link" size={20}/> 複製問卷連結
+             </button>
+          </div>
+          
+          <div className="bg-white p-6 md:p-12 rounded-[2.5rem] md:rounded-[3.5rem] shadow-xl border border-slate-100 space-y-8">
+             
+             {/* 介面客製化與參數設定 - 移至框架上方 */}
+             <div>
+               <h4 className="font-black text-lg flex items-center gap-2 mb-6 text-slate-800"><Icon name="Settings" size={20} className="text-indigo-500"/> 介面客製化與參數設定</h4>
+               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+                 
+                 <div className="space-y-2">
+                   <label className="text-sm font-bold text-slate-500 flex justify-between">主題顏色</label>
+                   <div className="flex items-center gap-3">
+                     <input type="color" value={session.quizTitleColor || DEFAULT_TITLE_COLOR} onChange={e=>updateSession({quizTitleColor: e.target.value})} className="w-10 h-10 rounded-lg cursor-pointer shadow-sm" />
+                     <span className="text-xs font-mono bg-slate-50 px-2 py-1 rounded-md border font-bold text-slate-600">{session.quizTitleColor || DEFAULT_TITLE_COLOR}</span>
+                   </div>
+                 </div>
+
+                 <div className="space-y-2">
+                   <label className="text-sm font-bold text-slate-500 flex justify-between">
+                     主標題大小 <span className="text-indigo-600">{session.titleFontSize || 24}px</span>
+                   </label>
+                   <input type="range" min="16" max="48" value={session.titleFontSize || 24} onChange={e=>updateSession({titleFontSize: Number(e.target.value)})} className="w-full" />
+                 </div>
+               </div>
+
+               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                 <div className="space-y-2">
+                   <label className="text-sm font-bold text-slate-500 flex justify-between">
+                     單題時間限制 (秒) <span className="text-indigo-600">{!session.timeLimit || session.timeLimit === 0 ? '不限時' : `${session.timeLimit} 秒`}</span>
+                   </label>
+                   <input type="range" min="0" max="60" step="5" value={session.timeLimit || 0} onChange={e=>updateSession({timeLimit: Number(e.target.value)})} className="w-full" />
+                 </div>
+
+                 <div className="space-y-2">
+                   <label className="text-sm font-bold text-slate-500 flex justify-between">停止問卷時間設定</label>
+                   <div className="flex gap-2">
+                     <select 
+                       value={session.autoCloseUnit || 'none'} 
+                       onChange={e => updateSession({autoCloseUnit: e.target.value})} 
+                       className="w-1/2 p-2 border-2 border-slate-200 rounded-xl outline-none font-bold text-slate-600 focus:border-indigo-400"
+                     >
+                       <option value="none">不限時</option>
+                       <option value="minutes">分</option>
+                       <option value="hours">時</option>
+                       <option value="days">天</option>
+                     </select>
+                     {(session.autoCloseUnit && session.autoCloseUnit !== 'none') && (
+                       <input 
+                         type="number" min="1" 
+                         value={session.autoCloseValue || 1} 
+                         onChange={e => updateSession({autoCloseValue: Number(e.target.value)})} 
+                         className="w-1/2 p-2 border-2 border-slate-200 rounded-xl outline-none font-bold text-slate-600 focus:border-indigo-400" 
+                         placeholder="輸入數值" 
+                       />
+                     )}
+                   </div>
+                 </div>
+               </div>
+             </div>
+
+             {/* 問卷歡迎語與啟動設定 - 移至框架下方 */}
+             <div className="pt-8 border-t border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center">
+                <div className="space-y-4">
+                   <label className="text-sm font-bold text-slate-500 block mb-2">問卷歡迎語 / 說明文字</label>
+                   <textarea 
+                     className="w-full p-5 md:p-6 border-2 rounded-[1.5rem] md:rounded-[2rem] font-bold shadow-inner outline-none transition-all" 
+                     style={{ backgroundColor: `${session.quizTitleColor}15`, borderColor: `${session.quizTitleColor}40`, color: session.quizTitleColor, fontSize: `${session.titleFontSize || 24}px` }}
+                     rows={3} value={session.quizTitle} onChange={e=>updateSession({quizTitle: e.target.value})} />
+                </div>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-4 h-full">
+                   <button onClick={()=>{
+                      updateSession({status: 'sync_active', startedAt: Date.now()});
+                   }} 
+                      className={`w-full sm:w-auto px-6 py-6 rounded-[2rem] font-black border-4 ${session.status === 'sync_active' ? 'btn-active-red' : 'btn-default-green'}`}>
+                      啟動問卷
+                   </button>
+                   <button onClick={()=>updateSession({status: 'lobby'})} 
+                      className={`w-full sm:w-auto px-6 py-6 rounded-[2rem] font-black border-4 ${session.status === 'lobby' ? 'btn-active-red' : 'bg-slate-500 text-white'}`}>
+                      停用問卷
+                   </button>
+                </div>
+             </div>
+             
+          </div>
+
+          <div className="bg-white p-6 md:p-8 rounded-[2rem] border shadow-lg flex flex-col sm:flex-row justify-between items-center gap-4">
+             <h4 className="font-black text-lg flex items-center gap-2"><Icon name="Users" size={20} className="text-indigo-600"/> 已加入客戶 ({students.length})</h4>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+             {students.map(s => (
+               <div key={s.id || s.studentId} className="bg-white p-4 rounded-2xl border shadow-sm text-center">
+                  <p className="font-black text-sm truncate">{s.studentName}</p>
+                  <p className={`text-[10px] font-bold mt-1 ${s.status === 'submitted' ? 'text-emerald-500' : 'text-slate-400'}`}>
+                    {s.status === 'submitted' ? '✅ 已提交' : '⏳ 填寫中'}
+                  </p>
+               </div>
+             ))}
+          </div>
+        </div>
+      );
+    }
+
+    function AnalysisView({ session, answers, onBack, sessionCode, setSessionData, renderAnalysisText, apiKey, user, callGeminiAPI }) {
+      const [showMockData, setShowMockData] = useState(false);
+      const [expandedIndices, setExpandedIndices] = useState([]);
+      const [isAnalyzing, setIsAnalyzing] = useState(false);
+      const [deletedCustomerIds, setDeletedCustomerIds] = useState([]); // 追蹤被刪除的客戶ID
+
+      // 5 種分流結果的專屬範本
+      const MOCK_CUSTOMERS = useMemo(() => [
+        {
+          studentId: 'mock_a_hot', studentName: '王大明 (A級熱客 - 頂規直上)', status: 'submitted',
+          answers: {
+            0: "1. 是的，非常認同！這正是我需要的保障，希望能進一步討論專屬規劃。 (選項A)",
+            1: "3. 計畫四 / 計畫五 (頂級醫療，面對癌症新藥完全免煩惱)",
+            2: "1. 越快越好，這幾天就想確認"
+          }
+        },
+        {
+          studentId: 'mock_b_budget', studentName: '林心如 (B級溫客 - 預算考量)', status: 'submitted',
+          answers: {
+            0: "2. 認同它的價值，但目前有「預算考量」或「想先檢視現有保單」是否重複。 (選項B)",
+            3: "1. 預算問題（覺得保費有點超出目前的規劃）",
+            4: "2. 好，請幫我用每月 OOOO 元的預算重新搭配看看"
+          }
+        },
+        {
+          studentId: 'mock_b_overlap', studentName: '陳建國 (B級防備客 - 保單重疊)', status: 'submitted',
+          answers: {
+            0: "2. 認同它的價值，但目前有「預算考量」或「想先檢視現有保單」是否重複。 (選項B)",
+            3: "2. 重疊疑慮（我不確定以前買的醫療險是不是已經夠賠了）",
+            4: "1. 好，我願意先做舊保單健診，看看缺口在哪"
+          }
+        },
+        {
+          studentId: 'mock_c_invest', studentName: '李小玲 (C級理財客 - 投資替代)', status: 'submitted',
+          answers: {
+            0: "3. 覺得還好 / 不需要，我打算用自身的「存款或理財規劃」來應對未來的醫療風險。 (選項C)",
+            5: "2. 變賣手邊的股票、基金或房地產",
+            6: "2. 好，可以簡單跟我說明一下這個財務邏輯"
+          }
+        },
+        {
+          studentId: 'mock_c_avoid', studentName: '張總裁 (C級冷漠客 - 逃避現實)', status: 'submitted',
+          answers: {
+            0: "3. 覺得還好 / 不需要，我打算用自身的「存款或理財規劃」來應對未來的醫療風險。 (選項C)",
+            5: "3. 其實還沒認真想過遇到這麼大筆支出的情況...",
+            6: "3. 不用了，我對自己的理財配置很有信心"
+          }
+        }
+      ], []);
+
+      const MOCK_COMPREHENSIVE = useMemo(() => ({
+        'mock_a_hot': {
+          persona: "行動力極強、危機意識高，對「高齡自費醫療」有明確痛點，且具備高預算的準買家。",
+          mbti: "ESTJ (總管型) - 講求效率、務實、重視結果與承諾，喜歡直接明瞭的溝通。",
+          disc: "D型 (掌控型) - 目標導向，決策果斷，討厭拖泥帶水，渴望立即解決問題。",
+          psychMap: "內在動機是「追求確定性與頂級防護」。極度厭惡未來的失控感，希望一次到位解決所有隱患。",
+          appealPoints: [
+            "強調「計畫四/五」帶來的絕對安心感與尊榮醫療品質",
+            "直接展示高額理賠的成功數據，建立權威與信任",
+            "強調能完全免疫未來癌症新藥或達文西手術的龐大自費",
+            "提供專屬VIP綠色通道或快速理賠服務承諾"
+          ],
+          precautions: [
+            "切忌囉嗦！直接講重點、條款核心與總保費結論",
+            "不要提供低保費方案讓他選，直接給「最好、最高的」",
+            "面談時務必準時且準備齊全（要保書、平板直接帶好）",
+            "不用過度感性的悲情故事，用客觀事實與高科技醫療數據"
+          ],
+          qnaAnalysis: [
+            { qIndex: 0, advice: "直接進入促結階段，無須再多做觀念溝通。", precautions: "不要再問他『為什麼想買』，會拖慢成交節奏。" },
+            { qIndex: 1, advice: "直接準備最高規格計畫四或五的建議書。", precautions: "不要主動幫他降保額或省錢，會拉低格局。" },
+            { qIndex: 2, advice: "24小時內馬上帶著平板與要保書赴約。", precautions: "絕對不能拖延，熱度一過就會產生變數。" }
+          ]
+        },
+        'mock_b_budget': {
+          persona: "精打細算、務實保守，認同保險價值但受限於現實財務壓力的中產階級。",
+          mbti: "ISFJ (守衛者型) - 謹慎、保守、重視家庭安全感，需要被體諒其財務壓力。",
+          disc: "S型 (穩定型) - 決策謹慎，害怕錯誤決定會影響生活品質，需要高度信任感。",
+          psychMap: "內在動機是「追求最高CP值與安全感」。想買但怕繳不起，需要你幫他想辦法「無痛擠出預算」。",
+          appealPoints: [
+            "提供「基礎版方案」或「長年期繳費」來降低每年保費負擔",
+            "將保費換算成「每天只要省下一杯咖啡錢」，降低心理門檻",
+            "強調『先求有再求好』的漸進式規劃觀念",
+            "展現同理心，讓他覺得你是站在他財務那一邊的顧問"
+          ],
+          precautions: [
+            "絕對不要用『生病花更多』來情緒勒索，會引發反感",
+            "不要強推高額計畫，超出預算他就會直接避不見面",
+            "避免質疑他的理財或消費習慣",
+            "不要給他太多方案選擇，控制在2種以內以免陷入選擇困難"
+          ],
+          qnaAnalysis: [
+            { qIndex: 0, advice: "認同其價值觀，將對話焦點轉向『如何在預算內解決問題』。", precautions: "避免在此階段給予任何購買壓力。" },
+            { qIndex: 3, advice: "主動開口詢問其『每月可負擔的具體金額』。", precautions: "不要擅自猜測他的預算，讓他自己說出口。" },
+            { qIndex: 4, advice: "依照他給的數字，精準設計出一套剛剛好的方案並約定見面看表。", precautions: "如果數字真的太低，也要先配一個最低門檻的給他看。" }
+          ]
+        },
+        'mock_b_overlap': {
+          persona: "防備心較重、重視邏輯與實證，過去曾購買過保險但缺乏清晰整合的客戶。",
+          mbti: "ISTJ (物流師型) - 實事求是，講求邏輯與證據，不輕易相信業務員的話術。",
+          disc: "C型 (分析型) - 追求精確，喜歡比較數據，重視細節與條款約定，懷疑心強。",
+          psychMap: "內在動機是「避免重複消費與當冤大頭」。必須親眼看到『現有保單真的不夠賠』的鐵證才會行動。",
+          appealPoints: [
+            "提供免費、客觀的『保單健診服務』，不帶推銷色彩",
+            "重點圈出他舊保單中的『最高續保年齡 75歲』條款，眼見為憑",
+            "用數據對比：過去的實支額度 vs 現在醫療通膨的真實花費",
+            "建立專業且中立的顧問形象，讓他覺得你是在幫他『查漏補缺』"
+          ],
+          precautions: [
+            "絕對不要在看過保單前，就批評別家的商品不好",
+            "條款解釋不能有任何模糊地帶，不知道就查，不要亂說",
+            "第一次見面只需給健診報告，千萬不要當場掏出新保單推銷",
+            "避免過度熱情的套近乎，保持專業顧問距離"
+          ],
+          qnaAnalysis: [
+            { qIndex: 0, advice: "讚賞他以前有買保險的先見之明，降低其防備心。", precautions: "不要立刻說他以前買的『不夠用』。" },
+            { qIndex: 3, advice: "將『重疊疑慮』轉化為『保單總體檢』的絕佳契機。", precautions: "不要試圖在電話或文字中解釋條款，一定要見面看紙本。" },
+            { qIndex: 4, advice: "請他將所有保單找出來，約定時間進行專業健診。", precautions: "提醒他帶齊家人保單，可順便做家庭延伸行銷。" }
+          ]
+        },
+        'mock_c_invest': {
+          persona: "自信、主見強，偏好實體資產與投資組合，對保險槓桿缺乏認知的傳統理財族。",
+          mbti: "ENTP (辯論家型) - 聰明、反應快、喜歡挑戰既有觀念，對自己的投資眼光極具自信。",
+          disc: "D/I 混合型 - 具備掌控慾，喜歡主導對話，重視資產的增值與流動性。",
+          psychMap: "內在動機是「資產最大化與掌控權」。認為保險是虧錢的生意，更相信房產或股市能解決一切問題。",
+          appealPoints: [
+            "將保險重新定義為『保護投資本金的財務防護網』",
+            "切入『醫療通膨』與『資產變現折價風險』的盲點（如急用錢時遇股災）",
+            "用『理財放大鏡』展示小保費鎖定大帳戶的高槓桿效益",
+            "強調保險理賠金是『免稅的現金流』，有利於資產傳承"
+          ],
+          precautions: [
+            "絕對不要去爭辯或貶低他的投資績效，會引發強烈反彈",
+            "少用『生病、理賠、醫療』等傳統保險詞彙",
+            "多用『資產隔離、風險轉嫁、槓桿、現金流』等財經術語",
+            "不要用恐嚇行銷（沒錢看病很慘），他完全不會買單"
+          ],
+          qnaAnalysis: [
+            { qIndex: 0, advice: "順著他的毛摸，肯定他具備極佳的財務規劃意識。", precautions: "千萬不要直接反駁『理財不能代替保險』。" },
+            { qIndex: 5, advice: "點出變賣資產的時間成本與可能的折價損失（流動性風險）。", precautions: "語氣要像財經顧問探討策略，而非業務員說教。" },
+            { qIndex: 6, advice: "準備精簡的『保單槓桿圖表』，用數字說服他。", precautions: "不要給予繁雜的長篇建議書，他只看核心效益與 ROI。" }
+          ]
+        },
+        'mock_c_avoid': {
+          persona: "對未來風險缺乏想像力，或刻意逃避沉重話題，奉行『活在當下、以後再說』的冷漠客。",
+          mbti: "ISFP (探險家型) - 隨遇而安，討厭壓力與複雜的長遠規劃，專注於眼前的生活與享受。",
+          disc: "S/C 偏低度意願 - 被動、不願面對衝突與風險，習慣把決策無限期推遲。",
+          psychMap: "內在動機是「維持現狀、逃避焦慮」。潛意識覺得想這些太沉重，只要不去看，風險就不存在。",
+          appealPoints: [
+            "用極度輕鬆、無壓力的故事或短影音來喚醒風險意識",
+            "將龐大的醫療費拆解成『每個月只要存下一點點零用錢』",
+            "強調『現在規劃，未來就可以無憂無慮繼續享受生活』",
+            "定期透過 LINE 發送軟性的健康資訊或輕度的社會新聞維持互動"
+          ],
+          precautions: [
+            "絕對不要用高壓逼單，他會立刻封鎖你",
+            "不要給他看太多血淋淋的醫療畫面或沉重的案例",
+            "現階段不要指望能立刻成交，需列入長期培育名單",
+            "避免任何會讓他產生『巨大財務壓力』的提案"
+          ],
+          qnaAnalysis: [
+            { qIndex: 0, advice: "保持禮貌，接受他的目前不需要，保留未來互動空間。", precautions: "不要追問『為什麼不需要』，會讓他覺得被冒犯。" },
+            { qIndex: 5, advice: "輕輕點出一句：『其實很多人遇到時，才發現退休金根本不夠燒。』讓子彈飛一會。", precautions: "點到為止，不要長篇大論的說教。" },
+            { qIndex: 6, advice: "將其標記為 D 級名單，偶爾分享財經短片或健康懶人包即可。", precautions: "不要再傳任何保單建議書或費率表給他。" }
+          ]
+        }
+      }), []);
+
+      // 結合過濾被刪除的客戶
+      const displayAnswers = useMemo(() => {
+         const base = showMockData ? [...answers, ...MOCK_CUSTOMERS] : answers;
+         return base.filter(a => !deletedCustomerIds.includes(a.studentId));
+      }, [answers, showMockData, MOCK_CUSTOMERS, deletedCustomerIds]);
+
+      const [selectedStudentId, setSelectedStudentId] = useState(null);
+      
+      useEffect(() => {
+        if (!selectedStudentId || !displayAnswers.find(a => a.studentId === selectedStudentId)) {
+          setSelectedStudentId(displayAnswers.length > 0 ? displayAnswers[0].studentId : null);
+        }
+      }, [displayAnswers, selectedStudentId]);
+
+      useEffect(() => {
+        setExpandedIndices([]);
+      }, [selectedStudentId]);
+
+      const selectedStudent = useMemo(() => displayAnswers.find(a => a.studentId === selectedStudentId), [displayAnswers, selectedStudentId]);
+      const existingAnalysis = session.detailedAnalysis?.[selectedStudentId];
+      const isAllExpanded = session.questions && expandedIndices.length === session.questions.length;
+
+      // 處理單一客戶刪除
+      const handleDeleteCustomer = async (e, customerId, isMock) => {
+         e.stopPropagation(); 
+         if (!confirm('確定要刪除這位客戶的資料嗎？(此動作無法復原)')) return;
+
+         if (isMock) {
+             setDeletedCustomerIds(prev => [...prev, customerId]);
+         } else {
+             if (window.fb && user && user.uid !== 'local_user') {
+                 try {
+                     await window.fb.deleteDoc(window.fb.doc(window.fb.db, 'artifacts', appId, 'public', 'data', 'answers', `${sessionCode}_${customerId}`));
+                     showToast('已自雲端刪除客戶資料');
+                 } catch (err) {
+                     alert('刪除失敗：' + err.message);
+                 }
+             } else {
+                 setDeletedCustomerIds(prev => [...prev, customerId]);
+             }
+         }
+         
+         if (selectedStudentId === customerId) {
+             setSelectedStudentId(null);
+         }
+      };
+
+      const toggleExpandAll = () => {
+        if (isAllExpanded) {
+          setExpandedIndices([]);
+        } else {
+          setExpandedIndices(session.questions.map((_, i) => i));
+        }
+      };
+
+      const toggleAccordion = (idx) => {
+        if (expandedIndices.includes(idx)) {
+          setExpandedIndices(expandedIndices.filter(i => i !== idx));
+        } else {
+          setExpandedIndices([idx]);
+        }
+      };
+
+      const runDetailedAi = async () => {
+        if (!selectedStudent) return;
+
+        if (selectedStudentId.startsWith('mock_')) {
+          setIsAnalyzing(true);
+          setTimeout(() => {
+            const mockResult = {
+              comprehensive: MOCK_COMPREHENSIVE[selectedStudentId]
+            };
+            const newAnalysis = { ...(session.detailedAnalysis || {}), [selectedStudentId]: mockResult };
+            if (window.fb && user && user.uid !== 'local_user') {
+              window.fb.setDoc(window.fb.doc(window.fb.db, 'artifacts', appId, 'public', 'data', 'sessions', sessionCode), { detailedAnalysis: newAnalysis }, { merge: true }).catch(e=>console.log(e));
+            }
+            setSessionData(prev => ({ ...prev, detailedAnalysis: newAnalysis }));
+            setIsAnalyzing(false);
+          }, 1500); 
+          return;
+        }
+        
+        setIsAnalyzing(true);
+
+        let qaText = "";
+        session.questions.forEach((q, idx) => {
+           const ans = selectedStudent.answers[idx] || "未回答 (可能因分流跳過)";
+           qaText += `第${idx+1}題: ${q.question}\n客戶真實回答: ${ans}\n\n`;
+        });
+
+        const prompt = `你是頂級保險銷售心理學專家，主力產品是「75歲以後的終身實支實付醫療險」。請針對以下客戶的真實問卷回答，進行深度心理學剖析。請務必只以 JSON 格式輸出。JSON 格式必須嚴格遵循如下結構(禁止包含 markdown code block 標籤):
+{"qnaAnalysis": [{"qIndex": 0, "advice": "實戰話術", "precautions": "注意事項"}], "comprehensive": {"persona": "描述(100字內)", "mbti": "特質(100字內)", "disc": "分析(100字內)", "psychMap": "動機(100字內)", "appealPoints": ["點1", "點2", "點3", "點4", "點5"], "precautions": ["忌1", "忌2", "忌3", "忌4", "忌5"]}}
+
+客戶資料如下:
+${qaText}`;
+
+        try {
+          const text = await callGeminiAPI(prompt, true);
+          let cleanText = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+          let result = null;
+
+          try {
+            result = JSON.parse(cleanText);
+          } catch (e) {
+            const startIdx = cleanText.indexOf('{');
+            if (startIdx !== -1) {
+              let braceCount = 0;
+              let validEndIdx = -1;
+              let inString = false;
+              let escapeNext = false;
+              
+              for (let i = startIdx; i < cleanText.length; i++) {
+                const char = cleanText[i];
+                if (escapeNext) { escapeNext = false; continue; }
+                if (char === '\\') { escapeNext = true; continue; }
+                if (char === '"') { inString = !inString; }
+                
+                if (!inString) {
+                  if (char === '{') braceCount++;
+                  else if (char === '}') {
+                    braceCount--;
+                    if (braceCount === 0) {
+                      validEndIdx = i;
+                      break;
+                    }
+                  }
+                }
+              }
+              
+              if (validEndIdx !== -1) {
+                result = JSON.parse(cleanText.substring(startIdx, validEndIdx + 1));
+              } else {
+                throw new Error("無法找到完整的 JSON 結尾符號");
+              }
+            } else {
+              throw new Error("找不到 JSON 起始符號");
+            }
+          }
+
+          if (result) {
+            const newAnalysis = { ...(session.detailedAnalysis || {}), [selectedStudentId]: result };
+            if (window.fb && user && user.uid !== 'local_user') {
+              await window.fb.setDoc(window.fb.doc(window.fb.db, 'artifacts', appId, 'public', 'data', 'sessions', sessionCode), { detailedAnalysis: newAnalysis }, { merge: true });
+            }
+            setSessionData(prev => ({ ...prev, detailedAnalysis: newAnalysis }));
+          }
+        } catch (e) {
+          console.error("AI 分析錯誤:", e);
+          alert(`分析失敗：\n${e.message}\n建議檢查 API 金鑰是否正確或模型權限。`);
+        }
+        setIsAnalyzing(false);
+      };
+
+      const handleExportHTML = () => {
+        try {
+          const clone = document.documentElement.cloneNode(true);
+          const scripts = clone.querySelectorAll('script');
+          scripts.forEach(s => s.remove());
+          
+          const sidebar = clone.querySelector('#customer-selector-sidebar');
+          if (sidebar) sidebar.remove();
+
+          const mainContent = clone.querySelector('#analysis-main-content');
+          if (mainContent) {
+            mainContent.classList.remove('md:w-3/4');
+            mainContent.classList.add('w-full');
+          }
+
+          const header = clone.querySelector('header');
+          if (header) header.remove();
+
+          const dpHeader = clone.querySelector('#decision-panel-header');
+          if (dpHeader) dpHeader.remove();
+
+          const btnReanalyze = clone.querySelector('#btn-reanalyze');
+          if (btnReanalyze) btnReanalyze.remove();
+
+          const exportPrintBtns = clone.querySelector('#export-print-btns');
+          if (exportPrintBtns) exportPrintBtns.remove();
+
+          const injectedScript = document.createElement('script');
+          const jsLines = [
+            "document.addEventListener('DOMContentLoaded', function() {",
+            "  const headers = document.querySelectorAll('.accordion-header');",
+            "  const bodies = document.querySelectorAll('.accordion-body');",
+            "  const arrows = document.querySelectorAll('.accordion-arrow');",
+            "  const toggleBtn = document.getElementById('expand-collapse-btn');",
+            "  let isAllExpanded = false;",
+            "  bodies.forEach(b => { b.classList.add('hidden'); });",
+            "  headers.forEach((header, index) => {",
+            "    header.addEventListener('click', () => {",
+            "      const isCurrentlyHidden = bodies[index].classList.contains('hidden');",
+            "      bodies.forEach((b, i) => { if(i !== index) b.classList.add('hidden'); });",
+            "      arrows.forEach((a, i) => { if(i !== index) a.classList.remove('rotate-180'); });",
+            "      if (isCurrentlyHidden) {",
+            "        bodies[index].classList.remove('hidden');",
+            "        arrows[index].classList.add('rotate-180');",
+            "      } else {",
+            "        bodies[index].classList.add('hidden');",
+            "        arrows[index].classList.remove('rotate-180');",
+            "      }",
+            "      isAllExpanded = false;",
+            "      if(toggleBtn) toggleBtn.innerHTML = '<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-expand\"><path d=\"m21 21-6-6m6 6v-4.8m0 4.8h-4.8M3 21l6-6m-6 6v-4.8m0 4.8h4.8M3 3l6 6M3 3v4.8M3 3h4.8m13.2 0-6 6m6-6v4.8m0-4.8h-4.8\"/></svg> <span>全部展開</span>';",
+            "    });",
+            "  });",
+            "  if(toggleBtn) {",
+            "    toggleBtn.addEventListener('click', () => {",
+            "      isAllExpanded = !isAllExpanded;",
+            "      if(isAllExpanded) {",
+            "        bodies.forEach(b => b.classList.remove('hidden'));",
+            "        arrows.forEach(a => a.classList.add('rotate-180'));",
+            "        toggleBtn.innerHTML = '<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-shrink\"><path d=\"m15 15 6 6m-6-6v4.8m0-4.8h4.8M9 15l-6 6m6-6v4.8m0-4.8H4.2M9 9 3 3M9 9V4.2M9 9H4.2m10.8 0 6-6m-6 6V4.2m0 4.8h4.8\"/></svg> <span>全部收合</span>';",
+            "      } else {",
+            "        bodies.forEach(b => b.classList.add('hidden'));",
+            "        arrows.forEach(a => a.classList.remove('rotate-180'));",
+            "        toggleBtn.innerHTML = '<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-expand\"><path d=\"m21 21-6-6m6 6v-4.8m0 4.8h-4.8M3 21l6-6m-6 6v-4.8m0 4.8h4.8M3 3l6 6M3 3v4.8M3 3h4.8m13.2 0-6 6m6-6v4.8m0-4.8h-4.8\"/></svg> <span>全部展開</span>';",
+            "      }",
+            "    });",
+            "  }",
+            "});"
+          ];
+          injectedScript.innerHTML = jsLines.join('\n');
+          clone.querySelector('body').appendChild(injectedScript);
+
+          const htmlContent = "<!DOCTYPE html>\n" + clone.outerHTML;
+          const blob = new Blob([htmlContent], { type: "text/html;charset=utf-8" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `客戶_${selectedStudent.studentName}_分析報告.html`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        } catch (err) {
+          console.error("Export Error:", err);
+          alert("匯出發生錯誤。");
+        }
+      };
+
+      return (
+        <div className="animate-in fade-in duration-700 flex flex-col pb-6 min-h-screen md:min-h-[85vh] print:min-h-0 print:pb-0 print:h-auto">
+          <div id="decision-panel-header" className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-5 md:p-8 rounded-[2rem] md:rounded-[3.5rem] shadow-xl border border-slate-100 mb-6 shrink-0 gap-4 print:hidden">
+            <h2 className="text-xl md:text-3xl font-black text-slate-800 flex items-center gap-3">🎯 單一客戶深度決策面板</h2>
+            <button onClick={onBack} className="w-full sm:w-auto bg-slate-100 px-6 md:px-8 py-3 md:py-4 rounded-xl md:rounded-[2rem] font-black text-sm hover:bg-slate-200 text-center">返回主控台</button>
+          </div>
+          
+          <div className="flex flex-col md:flex-row gap-6 flex-1 min-h-0 print:block">
+            <div id="customer-selector-sidebar" className="w-full md:w-1/4 bg-white p-5 md:p-6 rounded-[2rem] md:rounded-[3rem] shadow-xl border flex flex-col shrink-0 print:hidden">
+              <h3 className="text-lg font-black mb-4 flex items-center gap-2"><Icon name="Users" size={20} className="text-indigo-600"/> 選擇客戶</h3>
+              
+              <button 
+                onClick={() => setShowMockData(!showMockData)}
+                className={`w-full mb-4 py-3 rounded-2xl font-bold text-sm transition-all border-2 flex justify-center items-center gap-2 ${showMockData ? 'bg-rose-50 text-rose-600 border-rose-200 hover:bg-rose-100' : 'bg-indigo-50 text-indigo-600 border-indigo-200 hover:bg-indigo-100'}`}
+              >
+                {showMockData ? <><Icon name="Trash2" size={16}/> 隱藏範例資料</> : <><Icon name="UserPlus" size={16}/> 載入 5 筆分流範例</>}
+              </button>
+
+              {displayAnswers.length === 0 ? (
+                <div className="text-center text-slate-400 py-6 md:py-10 font-bold text-sm">尚未有客戶加入</div>
+              ) : (
+                <div className="flex overflow-x-auto gap-3 pb-2 md:pb-0 md:flex-col md:overflow-y-auto md:space-y-3 custom-scrollbar pr-1">
+                  {displayAnswers.map(s => (
+                    <div key={s.studentId} onClick={() => setSelectedStudentId(s.studentId)} 
+                      className={`relative shrink-0 w-48 md:w-full p-3 md:p-4 text-left rounded-[1.2rem] md:rounded-[1.5rem] font-bold transition-all border-2 cursor-pointer ${selectedStudentId === s.studentId ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg' : 'bg-slate-50 text-slate-700 border-transparent hover:bg-slate-100 hover:border-slate-200'}`}>
+                      <div className="pr-6 truncate text-sm md:text-base">{s.studentName}</div>
+                      <div className={`text-[10px] mt-1 truncate ${selectedStudentId === s.studentId ? 'text-indigo-200' : (s.status === 'submitted' ? 'text-emerald-500' : 'text-slate-400')}`}>
+                        {s.status === 'submitted' ? '✅ 已提交' : '⏳ 填寫中'}
+                      </div>
+                      <button onClick={(e) => handleDeleteCustomer(e, s.studentId, s.studentId.startsWith('mock_'))} className={`absolute top-1/2 -translate-y-1/2 right-3 p-1.5 rounded-full transition-colors ${selectedStudentId === s.studentId ? 'hover:bg-indigo-500 text-indigo-300 hover:text-white' : 'hover:bg-red-500 text-slate-300 hover:text-white'}`} title="刪除客戶">
+                        <Icon name="Trash2" size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div id="analysis-main-content" className="w-full md:w-3/4 bg-white p-5 md:p-8 rounded-[2rem] md:rounded-[3rem] shadow-xl border flex flex-col relative print:w-full print:border-none print:shadow-none print:p-0 print:m-0">
+              {selectedStudent ? (
+                <div className="h-full flex flex-col print:block">
+                  
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 shrink-0 border-b pb-4 gap-4 print:flex-row print:mb-4">
+                    <div>
+                      <h3 className="text-xl md:text-2xl font-black text-slate-800">客戶：<span className="text-indigo-600">{selectedStudent.studentName}</span> 的問卷分析</h3>
+                    </div>
+                    <button id="btn-reanalyze" onClick={runDetailedAi} disabled={isAnalyzing} className="print:hidden w-full sm:w-auto bg-indigo-600 text-white px-5 py-3 md:px-6 md:py-3 rounded-xl md:rounded-2xl font-black text-sm shadow-xl active:scale-95 transition-transform flex items-center justify-center gap-2 disabled:opacity-50">
+                      {isAnalyzing ? <Icon name="RefreshCw" className="animate-spin" size={18}/> : <Icon name="BrainCircuit" size={18}/>} 
+                      {isAnalyzing ? "正在分析中..." : (existingAnalysis ? "重新分析心理狀態" : "分析心理狀態")}
+                    </button>
+                  </div>
+
+                  <div className="flex-1 md:overflow-y-auto pr-2 md:pr-4 custom-scrollbar space-y-8 md:space-y-12 print:overflow-visible print:pr-0">
+                    {!existingAnalysis && !isAnalyzing && (
+                      <div className="bg-indigo-50 border-2 border-dashed border-indigo-200 rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-10 text-center space-y-4 print:hidden">
+                        <Icon name="BrainCircuit" size={40} className="mx-auto text-indigo-400 mb-2"/>
+                        <h4 className="text-lg md:text-xl font-black text-indigo-900">點擊上方按鈕開始 AI 心理剖析</h4>
+                        <p className="text-sm font-bold text-indigo-600">系統將根據客戶填答，精算出人物誌、性格傾向與實戰對策。</p>
+                      </div>
+                    )}
+                    
+                    {isAnalyzing && (
+                      <div className="flex flex-col items-center justify-center h-48 md:h-64 space-y-6 print:hidden">
+                        <Icon name="Loader2" size={40} className="animate-spin text-indigo-500"/>
+                        <p className="font-black text-indigo-600 animate-pulse">正在精算客戶潛意識...</p>
+                      </div>
+                    )}
+
+                    {existingAnalysis && !isAnalyzing && (
+                        <div className="space-y-6 print-break-inside-avoid">
+                          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                            <h4 className="text-lg md:text-xl font-black text-slate-800 flex items-center gap-2 border-l-4 border-emerald-500 pl-3">
+                              <Icon name="Activity" className="text-emerald-500"/> 心理特質綜合分析
+                            </h4>
+                            <div id="export-print-btns" className="flex gap-2 print:hidden shrink-0">
+                              <button onClick={handleExportHTML} className="bg-indigo-50 text-indigo-600 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-indigo-100 border border-indigo-100">
+                                <Icon name="Download" size={16}/> 另存 HTML
+                              </button>
+                              <button onClick={() => window.print()} className="bg-slate-100 text-slate-600 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-slate-200">
+                                <Icon name="Printer" size={16}/> 列印報告
+                              </button>
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div className="bg-blue-50 p-5 rounded-2xl border border-blue-100">
+                              <div className="text-[10px] font-black text-blue-400 mb-2 tracking-widest">
+                                <span className="theory-term" data-meaning={THEORY_DICTIONARY["PERSONA"]} title={THEORY_DICTIONARY["PERSONA"]}>PERSONA</span>
+                              </div>
+                              <div className="text-xs md:text-sm font-bold text-slate-700">{existingAnalysis.comprehensive?.persona}</div>
+                            </div>
+                            <div className="bg-purple-50 p-5 rounded-2xl border border-purple-100">
+                              <div className="text-[10px] font-black text-purple-400 mb-2 tracking-widest">
+                                <span className="theory-term" data-meaning={THEORY_DICTIONARY["MBTI"]} title={THEORY_DICTIONARY["MBTI"]}>MBTI</span>
+                              </div>
+                              <div className="text-xs md:text-sm font-bold text-slate-700">{existingAnalysis.comprehensive?.mbti}</div>
+                            </div>
+                            <div className="bg-amber-50 p-5 rounded-2xl border border-amber-100">
+                              <div className="text-[10px] font-black text-amber-500 mb-2 tracking-widest">
+                                <span className="theory-term" data-meaning={THEORY_DICTIONARY["DISC"]} title={THEORY_DICTIONARY["DISC"]}>DISC</span>
+                              </div>
+                              <div className="text-xs md:text-sm font-bold text-slate-700">{existingAnalysis.comprehensive?.disc}</div>
+                            </div>
+                            <div className="bg-rose-50 p-5 rounded-2xl border border-rose-100">
+                              <div className="text-[10px] font-black text-rose-400 mb-2 tracking-widest">
+                                <span className="theory-term" data-meaning={THEORY_DICTIONARY["心理地圖與動機"]} title={THEORY_DICTIONARY["心理地圖與動機"]}>心理動機</span>
+                              </div>
+                              <div className="text-xs md:text-sm font-bold text-slate-700">{existingAnalysis.comprehensive?.psychMap}</div>
+                            </div>
+                          </div>
+
+                          <div className="grid lg:grid-cols-2 gap-4 md:gap-6 mt-6">
+                            <div className="bg-indigo-900 text-white p-6 rounded-[2rem]">
+                              <h5 className="font-black text-base mb-4 flex items-center gap-2"><Icon name="Target" className="text-emerald-400"/> 訴求重點</h5>
+                              <ul className="space-y-2">
+                                {existingAnalysis.comprehensive?.appealPoints?.map((pt, i) => (
+                                  <li key={i} className="flex gap-2 items-start text-xs md:text-sm">
+                                    <span className="bg-emerald-500 w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[10px]">{i+1}</span>
+                                    {pt}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                            <div className="bg-white border-4 border-red-50 p-6 rounded-[2rem]">
+                              <h5 className="font-black text-base mb-4 flex items-center gap-2 text-red-600"><Icon name="AlertOctagon" className="text-red-500"/> 注意事項</h5>
+                              <ul className="space-y-2">
+                                {existingAnalysis.comprehensive?.precautions?.map((pt, i) => (
+                                  <li key={i} className="flex gap-2 items-start text-xs md:text-sm text-red-600">
+                                    <span className="bg-red-100 w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[10px]">{i+1}</span>
+                                    {pt}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
+                        </div>
+                    )}
+
+                    {!isAnalyzing && (
+                        <div className="space-y-6 pt-6 border-t-2 border-dashed border-slate-200 print:mt-8">
+                          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+                            <h4 className="text-lg md:text-xl font-black text-slate-800 flex items-center gap-2 border-l-4 border-indigo-500 pl-3">
+                              <Icon name="ListChecks" className="text-indigo-500"/> 逐題解析與對策
+                            </h4>
+                            <button id="expand-collapse-btn" onClick={toggleExpandAll} className="print:hidden bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-xl text-sm font-bold flex items-center gap-1.5 hover:bg-indigo-200 border border-indigo-200 transition-colors shrink-0">
+                              {isAllExpanded ? (
+                                <><Icon name="Shrink" size={16}/> <span>全部收合</span></>
+                              ) : (
+                                <><Icon name="Expand" size={16}/> <span>全部展開</span></>
+                              )}
+                            </button>
+                          </div>
+
+                          <div className="space-y-4">
+                            {session.questions.map((q, idx) => {
+                              // 分流處理：若客戶沒有回答該題（代表該分流沒走過），標註提醒
+                              const ansStr = selectedStudent.answers[idx] || "未作答 (因分流路徑不同而跳過此題)";
+                              const qnaData = existingAnalysis?.qnaAnalysis?.find(a => a.qIndex === idx);
+                              const isExpanded = expandedIndices.includes(idx);
+                              
+                              return (
+                                <div key={idx} className="bg-slate-50 rounded-[1.5rem] border border-slate-200 overflow-hidden">
+                                  <div className="accordion-header p-5 cursor-pointer flex justify-between items-center hover:bg-slate-100" onClick={() => toggleAccordion(idx)}>
+                                    <div className="font-black text-slate-800 text-sm md:text-base">
+                                      <span className="text-indigo-500 mr-2">Q{idx+1}.</span> {q.question}
+                                    </div>
+                                    <Icon name="ChevronDown" className={`accordion-arrow text-slate-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                                  </div>
+                                  <div className={`accordion-body p-5 pt-0 ${isExpanded ? '' : 'hidden'}`}>
+                                    <div className={`p-3 rounded-xl border-l-4 font-bold text-sm mb-4 ${selectedStudent.answers[idx] ? 'bg-white border-emerald-500 text-emerald-700 shadow-sm' : 'bg-slate-100 border-slate-400 text-slate-500'}`}>
+                                      回答： {ansStr}
+                                    </div>
+                                    {qnaData && selectedStudent.answers[idx] && (
+                                      <div className="grid md:grid-cols-2 gap-4">
+                                        <div className="bg-indigo-50 p-4 rounded-xl">
+                                          <div className="text-[10px] font-black text-indigo-500 mb-1">實戰方針</div>
+                                          <div className="text-xs text-slate-700 leading-relaxed">{qnaData.advice}</div>
+                                        </div>
+                                        <div className="bg-red-50 p-4 rounded-xl">
+                                          <div className="text-[10px] font-black text-red-500 mb-1">應注意事項</div>
+                                          <div className="text-xs text-red-600 leading-relaxed">{qnaData.precautions}</div>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="h-full flex items-center justify-center text-slate-400 font-bold">請先於左側選擇客戶</div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function StudentDashboard({ session, myData, onAnswer, onFinalSubmit }) {
+      // 加入了歷史紀錄軌跡，以支援分流和「上一題」功能
+      const [history, setHistory] = useState([0]); 
+      const idx = history[history.length - 1]; 
+      
+      const [timeLeft, setTimeLeft] = useState(session.timeLimit || 0);
+      const [isClosedByTime, setIsClosedByTime] = useState(false);
+      
+      const q = session.questions[idx];
+      const selected = myData?.answers?.[idx] || '';
+      const color = session.quizTitleColor || DEFAULT_TITLE_COLOR;
+
+      useEffect(() => {
+        setTimeLeft(session.timeLimit || 0);
+      }, [idx, session.timeLimit]);
+
+      useEffect(() => {
+        if (session.timeLimit && session.timeLimit > 0 && session.status !== 'lobby' && myData?.status !== 'submitted') {
+          const timer = setInterval(() => {
+            setTimeLeft(prev => {
+              if (prev <= 1) {
+                clearInterval(timer);
+                
+                let nextIdx = idx + 1;
+                if (q?.jumpLogic && q.jumpLogic[0] !== undefined) {
+                   nextIdx = q.jumpLogic[0]; // 超時如果沒有選，預設走第一個分支
+                }
+
+                if (q?.isEnd || nextIdx >= session.questions.length) {
+                  onFinalSubmit();
+                } else {
+                  if(!myData?.answers?.[idx]) {
+                     onAnswer(idx, '未作答(超時)');
+                  }
+                  setHistory(h => [...h, nextIdx]);
+                }
+                return 0;
+              }
+              return prev - 1;
+            });
+          }, 1000);
+          return () => clearInterval(timer);
+        }
+      }, [idx, q, session.timeLimit, session.status, myData?.status, session.questions.length, myData?.answers, onAnswer, onFinalSubmit]);
+
+      useEffect(() => {
+        if (session.status === 'sync_active' && session.startedAt && session.autoCloseUnit && session.autoCloseUnit !== 'none') {
+            const val = session.autoCloseValue || 1;
+            let duration = 0;
+            if (session.autoCloseUnit === 'minutes') duration = val * 60000;
+            if (session.autoCloseUnit === 'hours') duration = val * 3600000;
+            if (session.autoCloseUnit === 'days') duration = val * 86400000;
+            
+            const timeElapsed = Date.now() - session.startedAt;
+            if (timeElapsed >= duration) {
+                setIsClosedByTime(true);
+            } else {
+                setIsClosedByTime(false);
+                const timer = setTimeout(() => setIsClosedByTime(true), duration - timeElapsed);
+                return () => clearTimeout(timer);
+            }
+        } else {
+            setIsClosedByTime(false);
+        }
+      }, [session.status, session.startedAt, session.autoCloseUnit, session.autoCloseValue]);
+
+      const handleNext = () => {
+         const selectedIndex = q?.options ? q.options.indexOf(selected) : -1;
+         let nextIdx = idx + 1;
+         
+         // 若題目有分流邏輯且有選對應選項，則依據選項指派下一題
+         if (q?.jumpLogic && selectedIndex !== -1 && q.jumpLogic[selectedIndex] !== undefined) {
+            nextIdx = q.jumpLogic[selectedIndex];
+         }
+         
+         // 判斷是否為終點
+         if (q?.isEnd || nextIdx >= session.questions.length) {
+            onFinalSubmit();
+         } else {
+            setHistory([...history, nextIdx]);
+         }
+      };
+
+      const handlePrev = () => {
+         if (history.length > 1) {
+            const newHistory = [...history];
+            newHistory.pop();
+            setHistory(newHistory);
+         }
+      };
+
+      if (session.status === 'lobby') return <div className="h-[60vh] flex flex-col items-center justify-center text-center p-8 bg-white rounded-[3rem] shadow-2xl border"><h2>問卷尚未啟動 🙌</h2></div>;
+      if (isClosedByTime && myData?.status !== 'submitted') return <div className="h-[60vh] flex flex-col items-center justify-center text-center p-8 bg-white rounded-[3rem] shadow-2xl border"><h2>問卷已停止回應 ⏰</h2></div>;
+      if (myData?.status === 'submitted') return <div className="max-w-xl mx-auto mt-20 p-16 bg-white rounded-[4rem] shadow-2xl text-center"><h2>填寫完成！✨</h2></div>;
+
+      // 判斷按鈕文字
+      let nextIdxForLabel = idx + 1;
+      const selectedIndexForLabel = q?.options ? q.options.indexOf(selected) : -1;
+      if (q?.jumpLogic && selectedIndexForLabel !== -1 && q.jumpLogic[selectedIndexForLabel] !== undefined) {
+          nextIdxForLabel = q.jumpLogic[selectedIndexForLabel];
+      }
+      const isLastStep = q?.isEnd || nextIdxForLabel >= session.questions.length;
+
+      return (
+        <div className="max-w-2xl mx-auto space-y-8 relative">
+          {session.timeLimit > 0 && (
+            <div className="absolute -top-12 right-0 bg-red-100 text-red-600 font-black px-4 py-2 rounded-full flex items-center gap-2 shadow-sm border border-red-200">
+              <Icon name="Timer" size={18} /> 剩餘 {timeLeft} 秒
+            </div>
+          )}
+          <div className="bg-white rounded-[3rem] shadow-2xl overflow-hidden">
+             <div className="p-8 pb-4" style={{ backgroundColor: `${color}10` }}>
+               <h3 className="font-black" style={{ fontSize: `${session.questionFontSize}px` }}>{q?.question}</h3>
+             </div>
+             <div className="p-8">
+               {q?.type === 'choice' ? (
+                 <div className="space-y-3">
+                   {q.options.map((opt, i) => (
+                     <button key={i} onClick={() => onAnswer(idx, opt)} 
+                      className={`w-full p-4 rounded-[1.5rem] text-left font-black border-2 transition-all flex items-center gap-4 ${selected === opt ? 'bg-white shadow-xl' : 'bg-slate-50'}`} 
+                      style={{ borderColor: selected === opt ? color : '#f1f5f9', fontSize: `${session.optionFontSize}px` }}>
+                        <span className="flex-1">{opt}</span>
+                     </button>
+                   ))}
+                 </div>
+               ) : <textarea value={selected} onChange={e=>onAnswer(idx, e.target.value)} className="w-full p-6 bg-slate-50 border-2 rounded-[2rem] h-56 outline-none font-bold" />}
+             </div>
+          </div>
+          <div className="flex gap-5">
+             <button disabled={history.length <= 1} onClick={handlePrev} className="w-24 h-24 bg-white border-2 rounded-full flex items-center justify-center shadow-xl disabled:opacity-20"><Icon name="ChevronLeft" size={32} /></button>
+             <button onClick={handleNext} className="flex-1 h-24 text-white font-black text-2xl rounded-[3rem] shadow-2xl" style={{ backgroundColor: color }}>
+               {isLastStep ? '提交回覆' : '下一步'}
+             </button>
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
