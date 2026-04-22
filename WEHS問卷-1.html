@@ -575,6 +575,7 @@
       const [role, setRole] = useState(null); 
       const [sessionCode, setSessionCode] = useState(FIXED_CODE); 
       const [studentName, setStudentName] = useState('');
+      const [currentStudentId, setCurrentStudentId] = useState(null); // 記錄當下登入的唯一 ID
       const [sessionData, setSessionData] = useState(null);
       const [allAnswersData, setAllAnswersData] = useState([]);
       const [errorMsg, setErrorMsg] = useState('');
@@ -729,14 +730,30 @@
       const handleJoin = async (code, name) => {
         if (!name || !code) return setErrorMsg('請輸入姓名與代碼');
         const c = code.trim().toUpperCase();
-        const studentId = user ? `${user.uid}_${name}` : `local_${name}`;
+        
+        // --- 檢查並刪除重複姓名舊資料 ---
+        const existingMatch = allAnswersData.find(a => a.sessionId === c && a.studentName === name);
+        if (existingMatch) {
+            if (window.fb && user && user.uid !== 'local_user') {
+                try {
+                    const docId = existingMatch.id || `${c}_${existingMatch.studentId}`;
+                    await window.fb.deleteDoc(window.fb.doc(window.fb.db, 'artifacts', appId, 'public', 'data', 'answers', docId));
+                } catch(e) { console.warn("刪除舊資料失敗", e); }
+            }
+            setAllAnswersData(prev => prev.filter(a => a.studentId !== existingMatch.studentId));
+        }
+        
+        // 產生帶有時間戳的唯一 ID (確保每次加入都是全新實體)
+        const timestamp = Date.now();
+        const studentId = user ? `${user.uid}_${name}_${timestamp}` : `local_${name}_${timestamp}`;
+        setCurrentStudentId(studentId);
 
         if (window.fb && user && user.uid !== 'local_user') {
           try {
             const snap = await window.fb.getDoc(window.fb.doc(window.fb.db, 'artifacts', appId, 'public', 'data', 'sessions', c));
             if (!snap.exists()) return setErrorMsg('找不到該代碼');
             const aRef = window.fb.doc(window.fb.db, 'artifacts', appId, 'public', 'data', 'answers', `${c}_${studentId}`);
-            await window.fb.setDoc(aRef, { sessionId: c, studentId, studentName: name, answers: {}, status: 'in_progress', joinedAt: Date.now() }, { merge: true });
+            await window.fb.setDoc(aRef, { sessionId: c, studentId, studentName: name, answers: {}, status: 'in_progress', joinedAt: timestamp }, { merge: true });
           } catch (e) { return setErrorMsg("加入失敗，連線異常"); }
         }
 
@@ -754,7 +771,7 @@
         }
         setAllAnswersData(prev => {
           if(!prev.find(p => p.studentId === studentId)) {
-            return [...prev, { sessionId: c, studentId, studentName: name, answers: {}, status: 'in_progress' }];
+            return [...prev, { sessionId: c, studentId, studentName: name, answers: {}, status: 'in_progress', joinedAt: timestamp }];
           }
           return prev;
         });
@@ -920,7 +937,7 @@
                   <Icon name="Settings" size={16}/> <span className="hidden sm:inline">API 設定</span>
                 </button>
               )}
-              {role && <button onClick={() => {setRole(null); setView('main'); setStudentName('');}} className="bg-red-500/10 text-red-500 px-3 md:px-4 py-1.5 rounded-xl text-xs md:text-sm font-bold border border-red-500/20 hover:bg-red-500/20 transition-colors">登出</button>}
+              {role && <button onClick={() => {setRole(null); setView('main'); setStudentName(''); setCurrentStudentId(null);}} className="bg-red-500/10 text-red-500 px-3 md:px-4 py-1.5 rounded-xl text-xs md:text-sm font-bold border border-red-500/20 hover:bg-red-500/20 transition-colors">登出</button>}
             </div>
           </header>
 
@@ -985,27 +1002,26 @@
                 {role === 'student' && sessionData && (
                    <StudentDashboard 
                      session={sessionData} 
-                     myData={allAnswersData.find(a => a.studentId === (user ? `${user.uid}_${studentName}` : `local_${studentName}`))} 
+                     myData={allAnswersData.find(a => a.studentId === currentStudentId)} 
                      onAnswer={(idx, val) => {
-                       const studentId = user ? `${user.uid}_${studentName}` : `local_${studentName}`;
                        if(window.fb && user && user.uid !== 'local_user') {
-                         const aRef = window.fb.doc(window.fb.db, 'artifacts', appId, 'public', 'data', 'answers', `${sessionCode}_${studentId}`);
+                         const aRef = window.fb.doc(window.fb.db, 'artifacts', appId, 'public', 'data', 'answers', `${sessionCode}_${currentStudentId}`);
                          window.fb.setDoc(aRef, { answers: { [idx]: val } }, { merge: true });
                        }
-                       setAllAnswersData(prev => prev.map(a => a.studentId === studentId ? { ...a, answers: { ...a.answers, [idx]: val } } : a));
+                       setAllAnswersData(prev => prev.map(a => a.studentId === currentStudentId ? { ...a, answers: { ...a.answers, [idx]: val } } : a));
                      }} 
                      onFinalSubmit={() => {
-                       const studentId = user ? `${user.uid}_${studentName}` : `local_${studentName}`;
                        if(window.fb && user && user.uid !== 'local_user') {
-                         const aRef = window.fb.doc(window.fb.db, 'artifacts', appId, 'public', 'data', 'answers', `${sessionCode}_${studentId}`);
+                         const aRef = window.fb.doc(window.fb.db, 'artifacts', appId, 'public', 'data', 'answers', `${sessionCode}_${currentStudentId}`);
                          window.fb.setDoc(aRef, { status: 'submitted', submittedAt: Date.now() }, { merge: true });
                        }
-                       setAllAnswersData(prev => prev.map(a => a.studentId === studentId ? { ...a, status: 'submitted' } : a));
+                       setAllAnswersData(prev => prev.map(a => a.studentId === currentStudentId ? { ...a, status: 'submitted' } : a));
                      }} 
                      onExit={() => {
                        setRole(null);
                        setView('main');
                        setStudentName('');
+                       setCurrentStudentId(null);
                      }}
                    />
                 )}
@@ -1920,6 +1936,7 @@ ${qaText}`;
       
       const [timeLeft, setTimeLeft] = useState(session.timeLimit || 0);
       const [isClosedByTime, setIsClosedByTime] = useState(false);
+      const [hoveredOpt, setHoveredOpt] = useState(null); // 用於追蹤選項 Hover 狀態
       
       const q = session.questions[idx];
       const selected = myData?.answers?.[idx] || '';
@@ -1947,6 +1964,7 @@ ${qaText}`;
                   if(!myData?.answers?.[idx]) {
                      onAnswer(idx, '未作答(超時)');
                   }
+                  setHoveredOpt(null);
                   setHistory(h => [...h, nextIdx]);
                 }
                 return 0;
@@ -1991,6 +2009,7 @@ ${qaText}`;
          if (q?.isEnd || nextIdx >= session.questions.length) {
             onFinalSubmit();
          } else {
+            setHoveredOpt(null); // 切換題目時重置 Hover 狀態
             setHistory([...history, nextIdx]);
          }
       };
@@ -1999,6 +2018,7 @@ ${qaText}`;
          if (history.length > 1) {
             const newHistory = [...history];
             newHistory.pop();
+            setHoveredOpt(null);
             setHistory(newHistory);
          }
       };
@@ -2036,19 +2056,39 @@ ${qaText}`;
              <div className="p-8">
                {q?.type === 'choice' ? (
                  <div className="space-y-3">
-                   {q.options.map((opt, i) => (
-                     <button key={i} onClick={() => {
-                        onAnswer(idx, opt);
-                        setTimeout(() => handleNext(opt), 250);
-                      }} 
-                      className={`w-full p-4 rounded-[1.5rem] text-left font-black border-2 transition-all flex items-center gap-4 ${selected === opt ? 'bg-white shadow-xl scale-[1.02]' : 'bg-slate-50 hover:bg-slate-100 hover:border-slate-300'}`} 
-                      style={{ borderColor: selected === opt ? color : '#f1f5f9', fontSize: `${session.optionFontSize}px` }}>
-                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${selected === opt ? 'border-transparent' : 'border-slate-300'}`} style={{ backgroundColor: selected === opt ? color : 'transparent' }}>
-                          {selected === opt && <Icon name="Check" size={14} color="#fff" strokeWidth={4} />}
-                        </div>
-                        <span className="flex-1" style={{ color: session.optionColor || '#334155' }}>{opt}</span>
-                     </button>
-                   ))}
+                   {q.options.map((opt, i) => {
+                     const isSelected = selected === opt;
+                     const isHovered = hoveredOpt === opt;
+                     
+                     // 顏色邏輯：Hover 觸發時背景翠綠、文字白；Selected 時背景白、文字主題色；Default 背景灰、文字預設色。
+                     const bgStr = isHovered ? '#10b981' : (isSelected ? '#ffffff' : '#f8fafc');
+                     const txtStr = isHovered ? '#ffffff' : (session.optionColor || '#334155');
+                     const borderStr = isHovered ? '#10b981' : (isSelected ? color : '#f1f5f9');
+                     
+                     // 圓圈邏輯：
+                     const circleBg = isSelected ? color : (isHovered ? '#ffffff' : 'transparent');
+                     const circleBorder = isHovered ? '#ffffff' : (isSelected ? 'transparent' : '#cbd5e1');
+                     const checkColor = isSelected ? '#ffffff' : '#10b981';
+
+                     return (
+                       <button key={i} 
+                        onMouseEnter={() => setHoveredOpt(opt)}
+                        onMouseLeave={() => setHoveredOpt(null)}
+                        onClick={() => {
+                          onAnswer(idx, opt);
+                          setTimeout(() => handleNext(opt), 250);
+                        }} 
+                        className={`w-full p-4 rounded-[1.5rem] text-left font-black border-2 transition-all flex items-center gap-4 ${isSelected ? 'shadow-xl scale-[1.02]' : 'shadow-sm'}`} 
+                        style={{ borderColor: borderStr, backgroundColor: bgStr, fontSize: `${session.optionFontSize}px` }}>
+                          
+                          <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors`} 
+                               style={{ borderColor: circleBorder, backgroundColor: circleBg }}>
+                            {(isSelected || isHovered) && <Icon name="Check" size={14} color={checkColor} strokeWidth={4} />}
+                          </div>
+                          <span className="flex-1 transition-colors" style={{ color: txtStr }}>{opt}</span>
+                       </button>
+                     );
+                   })}
                  </div>
                ) : <textarea value={selected} onChange={e=>onAnswer(idx, e.target.value)} className="w-full p-6 bg-slate-50 border-2 rounded-[2rem] h-56 outline-none font-bold" style={{ fontSize: `${session.optionFontSize}px`, color: session.optionColor || '#334155' }} />}
              </div>
