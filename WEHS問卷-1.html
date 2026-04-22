@@ -148,7 +148,7 @@
   <script>
     window.__app_id = "wehs-pro-v16";
     window.__firebase_config = JSON.stringify({
-      apiKey: "AIzaSyBmJrLP_ETdJaW3s3Ta6fNencdTRbRBo5g",
+      apiKey: "AIzaSyD-smCl-fY88-A0jOfBtP8ycAZzGbTCNmY",
       authDomain: "ai-survey-38d53.firebaseapp.com",
       projectId: "ai-survey-38d53",
       storageBucket: "ai-survey-38d53.firebasestorage.app",
@@ -185,7 +185,8 @@
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'wehs-pro-v16';
     const FIXED_CODE = "1234";
     
-    let defaultApiKey = "AIzaSyBRZXUT4zuvgoaK1a4IS60gN9M_PxMjhHE"; 
+    // 預設 API 金鑰 (若在本地執行，請務必將您申請的真實 API Key 貼在下方引號內)
+    let defaultApiKey = ""; 
 
     const THEORY_DICTIONARY = {
       "認知負荷理論": "指大腦處理資訊的容量有限。題目或介面過於繁雜時，客戶會產生「認知疲勞」導致隨意填寫或中途放棄。",
@@ -851,11 +852,22 @@
       };
 
       const callGeminiAPI = async (prompt, requireJson = false) => {
-        // [修正] 從 state 抓取 apiKey，若為空則傳入空字串
-        const activeKey = apiKey || ""; 
-        const modelName = "gemini-2.5-flash-preview-09-2025";
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${activeKey}`;
+        let activeKey = apiKey || defaultApiKey || "";
         
+        // 偵測是否為本機端執行 (C:/Users/... 或是 localhost)
+        const isLocalHost = window.location.protocol === 'file:' || window.location.hostname === 'localhost';
+        
+        // 若在本機執行且沒有提供 API Key，直接顯示友善提醒
+        if (isLocalHost && !activeKey) {
+           throw new Error("本機執行必須使用 API 金鑰！\n請點擊右上角「API 設定」按鈕輸入，\n或直接將金鑰貼在程式碼最上方的 defaultApiKey 中。");
+        }
+
+        const modelName = activeKey ? "gemini-1.5-flash" : "gemini-2.5-flash-preview-09-2025";
+        
+        const url = activeKey
+          ? `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${activeKey}`
+          : `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`;
+
         const payload = { 
           contents: [{ parts: [{ text: prompt }] }] 
         };
@@ -1210,6 +1222,21 @@
         showToast('✅ 邀請連結與訊息已複製！');
       };
 
+      const handleClearAllData = async () => {
+        if (!confirm(`確定要清空代碼 ${code} 下的「所有客戶資料」嗎？此動作無法復原！`)) return;
+        if (window.fb && students.length > 0) {
+          try {
+             for (const s of students) {
+               const docId = s.id || `${code}_${s.studentId}`;
+               await window.fb.deleteDoc(window.fb.doc(window.fb.db, 'artifacts', appId, 'public', 'data', 'answers', docId));
+             }
+             showToast('✅ 已清空所有客戶資料！');
+          } catch (e) {
+             showToast('清理失敗: ' + e.message);
+          }
+        }
+      };
+
       return (
         <div className="space-y-6 animate-in fade-in duration-500">
           <div className="flex flex-col sm:flex-row gap-4">
@@ -1313,6 +1340,11 @@
 
           <div className="bg-white p-6 md:p-8 rounded-[2rem] border shadow-lg flex flex-col sm:flex-row justify-between items-center gap-4">
              <h4 className="font-black text-lg flex items-center gap-2"><Icon name="Users" size={20} className="text-indigo-600"/> 已加入客戶 ({students.length})</h4>
+             {students.length > 0 && (
+                <button onClick={handleClearAllData} className="bg-red-50 text-red-600 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-red-100 border border-red-200 transition-colors shrink-0">
+                  <Icon name="Trash2" size={16}/> 清空所有資料
+                </button>
+             )}
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
              {students.map(s => (
@@ -1366,7 +1398,7 @@
           studentId: 'mock_c_invest', studentName: '李小玲 (C級理財客 - 投資替代)', status: 'submitted',
           answers: {
             0: "3. 打算靠自己存款或投資理財解決",
-            26: "2. 變賣股票 / 基金 / 房產",
+            26: "2. 變 গৌ股票 / 基金 / 房產",
             31: "2. 請傳幾張圖表給我參考",
             33: "3. 有些需要微調 (將進入文字填寫) ✏️",
             38: "我只看投資報酬率，圖表做得好再說。"
