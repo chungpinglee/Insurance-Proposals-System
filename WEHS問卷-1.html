@@ -1891,18 +1891,32 @@ ${qaText}`;
       };
 
       const handlePrint = () => {
-        // 自動展開所有已回答的題目
+        // 1. 自動展開所有已回答的題目
         setExpandedIndices(answeredIndices);
         
-        // 暫存原有的網頁標題，並更換為列印預設檔名
+        // 2. 暫存原有的網頁標題
         const originalTitle = document.title;
+        
+        // 3. 更改為列印預設檔名
         document.title = `${selectedStudent.studentName}-${sessionCode}問卷分析`;
         
-        // 稍微延遲 0.3 秒，等待 React 將所有題目展開到畫面上後再呼叫列印
+        // 4. 延遲 300 毫秒，等待畫面完全展開後再呼叫列印
         setTimeout(() => {
           window.print();
-          // 列印對話框開啟後，復原原本的網頁標題
-          document.title = originalTitle;
+          
+          // 5. 確保在列印對話框完全關閉後，才復原網頁標題
+          const restoreTitle = () => {
+            document.title = originalTitle;
+            window.removeEventListener('afterprint', restoreTitle);
+          };
+          window.addEventListener('afterprint', restoreTitle);
+          
+          // 備用防呆機制（避免部分舊版瀏覽器不支援 afterprint 事件）
+          setTimeout(() => {
+            if (document.title !== originalTitle) {
+              document.title = originalTitle;
+            }
+          }, 3000);
         }, 300);
       };
 
