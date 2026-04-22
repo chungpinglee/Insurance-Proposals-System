@@ -1890,6 +1890,22 @@ ${qaText}`;
         }
       };
 
+      const handlePrint = () => {
+        // 自動展開所有已回答的題目
+        setExpandedIndices(answeredIndices);
+        
+        // 暫存原有的網頁標題，並更換為列印預設檔名
+        const originalTitle = document.title;
+        document.title = `${selectedStudent.studentName}-${sessionCode}問卷分析`;
+        
+        // 稍微延遲 0.3 秒，等待 React 將所有題目展開到畫面上後再呼叫列印
+        setTimeout(() => {
+          window.print();
+          // 列印對話框開啟後，復原原本的網頁標題
+          document.title = originalTitle;
+        }, 300);
+      };
+
       return (
         <div className="animate-in fade-in duration-700 flex flex-col pb-6 min-h-screen md:min-h-[85vh] print:min-h-0 print:pb-0 print:h-auto">
           <div id="decision-panel-header" className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-5 md:p-8 rounded-[2rem] md:rounded-[3.5rem] shadow-xl border border-slate-100 mb-6 shrink-0 gap-4 print:hidden">
@@ -1978,7 +1994,7 @@ ${qaText}`;
                               <button onClick={handleExportHTML} className="bg-indigo-50 text-indigo-600 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-indigo-100 border border-indigo-100">
                                 <Icon name="Download" size={16}/> 另存 HTML
                               </button>
-                              <button onClick={() => window.print()} className="bg-slate-100 text-slate-600 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-slate-200">
+                              <button onClick={handlePrint} className="bg-slate-100 text-slate-600 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-slate-200">
                                 <Icon name="Printer" size={16}/> 列印報告
                               </button>
                             </div>
