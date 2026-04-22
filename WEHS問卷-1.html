@@ -148,7 +148,7 @@
   <script>
     window.__app_id = "wehs-pro-v16";
     window.__firebase_config = JSON.stringify({
-      apiKey: "AIzaSyD-smCl-fY88-A0jOfBtP8ycAZzGbTCNmY",
+      apiKey: "AIzaSyBmJrLP_ETdJaW3s3Ta6fNencdTRbRBo5g",
       authDomain: "ai-survey-38d53.firebaseapp.com",
       projectId: "ai-survey-38d53",
       storageBucket: "ai-survey-38d53.firebasestorage.app",
@@ -862,12 +862,6 @@
            throw new Error("本機執行必須使用 API 金鑰！\n請點擊右上角「API 設定」按鈕輸入，\n或直接將金鑰貼在程式碼最上方的 defaultApiKey 中。");
         }
 
-        const modelName = activeKey ? "gemini-1.5-flash" : "gemini-2.5-flash-preview-09-2025";
-        
-        const url = activeKey
-          ? `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${activeKey}`
-          : `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`;
-
         const payload = { 
           contents: [{ parts: [{ text: prompt }] }] 
         };
@@ -876,35 +870,63 @@
            payload.generationConfig = { responseMimeType: "application/json" };
         }
 
-        const exponentialBackoff = async (attempt = 0) => {
-          try {
-            const res = await fetch(url, {
-               method: 'POST',
-               headers: { 'Content-Type': 'application/json' },
-               body: JSON.stringify(payload)
-            });
+        // [更新] 智能模型備援清單：優先用 1.5 flash，失敗則自動降級嘗試 1.5 pro 與 gemini-pro
+        const modelsToTry = activeKey 
+            ? ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro"] 
+            : ["gemini-2.5-flash-preview-09-2025"];
 
-            if (!res.ok) {
-              const errData = await res.json();
-              throw new Error(errData.error?.message || `API Error: ${res.status}`);
-            }
+        let lastError = null;
 
-            const data = await res.json();
-            if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
-               return data.candidates[0].content.parts[0].text;
-            }
-            throw new Error("API 未回傳有效結果");
-          } catch (err) {
-            if (attempt < 3) {
-              const delay = Math.pow(2, attempt) * 1000;
-              await new Promise(resolve => setTimeout(resolve, delay));
-              return exponentialBackoff(attempt + 1);
-            }
-            throw err;
-          }
-        };
+        for (const modelName of modelsToTry) {
+            const url = activeKey
+              ? `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${activeKey}`
+              : `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`;
 
-        return exponentialBackoff();
+            const exponentialBackoff = async (attempt = 0) => {
+              try {
+                const res = await fetch(url, {
+                   method: 'POST',
+                   headers: { 'Content-Type': 'application/json' },
+                   body: JSON.stringify(payload)
+                });
+
+                if (!res.ok) {
+                  const errData = await res.json();
+                  throw new Error(errData.error?.message || `API Error: ${res.status}`);
+                }
+
+                const data = await res.json();
+                if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
+                   return data.candidates[0].content.parts[0].text;
+                }
+                throw new Error("API 未回傳有效結果");
+              } catch (err) {
+                // 若為模型不存在或不支援等權限問題，不需要浪費時間重試，直接換下一個模型
+                if (err.message.includes("is not found") || err.message.includes("not supported")) {
+                    throw err; 
+                }
+                // 其他網路問題則進行指數退避重試
+                if (attempt < 4) {
+                  const delay = Math.pow(2, attempt) * 1000;
+                  await new Promise(resolve => setTimeout(resolve, delay));
+                  return exponentialBackoff(attempt + 1);
+                }
+                throw err;
+              }
+            };
+
+            try {
+                let result = await exponentialBackoff();
+                return result; // 若成功取得回覆，直接回傳結果，結束迴圈
+            } catch (err) {
+                lastError = err;
+                console.warn(`[智能備援] 模型 ${modelName} 失敗:`, err.message);
+                // 失敗後，for 迴圈會自動進入下一個模型繼續嘗試
+            }
+        }
+
+        // 如果全部的模型都嘗試失敗了，才拋出最後的錯誤提示
+        throw new Error(`嘗試多個 AI 模型皆遭拒絕。\n錯誤原因：${lastError?.message}\n建議：請確認 API 金鑰是否正確，或是否尚未開通 Gemini API 權限。`);
       };
 
       if (isLockedOut) {
@@ -1553,7 +1575,15 @@
 
       const selectedStudent = useMemo(() => displayAnswers.find(a => a.studentId === selectedStudentId), [displayAnswers, selectedStudentId]);
       const existingAnalysis = session.detailedAnalysis?.[selectedStudentId];
-      const isAllExpanded = session.questions && expandedIndices.length === session.questions.length;
+      
+      const answeredIndices = useMemo(() => {
+        if (!selectedStudent || !session.questions) return [];
+        return session.questions
+          .map((q, i) => selectedStudent.answers[i] ? i : -1)
+          .filter(i => i !== -1);
+      }, [selectedStudent, session.questions]);
+
+      const isAllExpanded = answeredIndices.length > 0 && answeredIndices.every(i => expandedIndices.includes(i));
 
       // 處理單一客戶刪除
       const handleDeleteCustomer = async (e, customerId, isMock) => {
@@ -1584,7 +1614,7 @@
         if (isAllExpanded) {
           setExpandedIndices([]);
         } else {
-          setExpandedIndices(session.questions.map((_, i) => i));
+          setExpandedIndices(answeredIndices);
         }
       };
 
@@ -1619,8 +1649,10 @@
 
         let qaText = "";
         session.questions.forEach((q, idx) => {
-           const ansStr = selectedStudent.answers[idx] || "未作答 (可能因分流跳過此題)";
-           qaText += `第${idx+1}題: ${q.question}\n客戶真實回答: ${ansStr}\n\n`;
+           const ansStr = selectedStudent.answers[idx];
+           if (ansStr) {
+               qaText += `第${idx+1}題: ${q.question}\n客戶真實回答: ${ansStr}\n\n`;
+           }
         });
 
         const prompt = `你是頂級保險銷售心理學專家，主力產品是「75歲以後的終身實支實付醫療險」。請針對以下客戶的真實問卷回答，進行深度心理學剖析。請務必只以 JSON 格式輸出。JSON 格式必須嚴格遵循如下結構(禁止包含 markdown code block 標籤):
@@ -1817,7 +1849,17 @@ ${qaText}`;
                   
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 shrink-0 border-b pb-4 gap-4 print:flex-row print:mb-4">
                     <div>
-                      <h3 className="text-xl md:text-2xl font-black text-slate-800">客戶：<span className="text-indigo-600">{selectedStudent.studentName}</span> 的問卷分析</h3>
+                      <h3 className="text-xl md:text-2xl font-black text-slate-800 flex flex-wrap items-center gap-3">
+                        客戶：<span className="text-indigo-600">{selectedStudent.studentName}</span> 
+                        <span className={`text-sm px-3 py-1 rounded-full border flex items-center gap-1 ${selectedStudent.status === 'submitted' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-amber-50 text-amber-600 border-amber-200 animate-pulse'}`}>
+                          {selectedStudent.status === 'submitted' ? '✅ 已提交完整問卷' : '⏳ 即時同步填寫中...'}
+                        </span>
+                      </h3>
+                      {selectedStudent.status !== 'submitted' && (
+                        <p className="text-sm font-bold text-slate-500 mt-2">
+                          目前已回答 {Object.keys(selectedStudent.answers || {}).length} 題，畫面將自動即時更新。
+                        </p>
+                      )}
                     </div>
                     <button id="btn-reanalyze" onClick={runDetailedAi} disabled={isAnalyzing} className="print:hidden w-full sm:w-auto bg-indigo-600 text-white px-5 py-3 md:px-6 md:py-3 rounded-xl md:rounded-2xl font-black text-sm shadow-xl active:scale-95 transition-transform flex items-center justify-center gap-2 disabled:opacity-50">
                       {isAnalyzing ? <Icon name="RefreshCw" className="animate-spin" size={18}/> : <Icon name="BrainCircuit" size={18}/>} 
@@ -1845,7 +1887,7 @@ ${qaText}`;
                         <div className="space-y-6 print-break-inside-avoid">
                           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                             <h4 className="text-lg md:text-xl font-black text-slate-800 flex items-center gap-2 border-l-4 border-emerald-500 pl-3">
-                              <Icon name="Activity" className="textemerald-500"/> 心理特質綜合分析
+                              <Icon name="Activity" className="text-emerald-500"/> 心理特質綜合分析
                             </h4>
                             <div id="export-print-btns" className="flex gap-2 print:hidden shrink-0">
                               <button onClick={handleExportHTML} className="bg-indigo-50 text-indigo-600 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-indigo-100 border border-indigo-100">
@@ -1928,7 +1970,9 @@ ${qaText}`;
 
                           <div className="space-y-4">
                             {session.questions.map((q, idx) => {
-                              const ansStr = selectedStudent.answers[idx] || "未作答 (因分流路徑不同而跳過此題)";
+                              const ansStr = selectedStudent.answers[idx];
+                              if (!ansStr) return null; // 隱藏未回答的分流題目
+                              
                               const qnaData = existingAnalysis?.qnaAnalysis?.find(a => a.qIndex === idx);
                               const isExpanded = expandedIndices.includes(idx);
                               
