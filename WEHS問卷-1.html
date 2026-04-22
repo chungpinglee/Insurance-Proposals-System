@@ -2066,7 +2066,7 @@ ${qaText}`;
                                     <div className="font-black text-slate-800 text-sm md:text-base">
                                       <span className="text-indigo-500 mr-2">Q{idx+1}.</span> 
                                       {q.question.includes('【歸納確認】') ? (
-                                        <><span className="text-blue-600 bg-white border border-blue-600 px-1.5 py-0.5 rounded-md mr-1">【歸納確認】</span>{q.question.replace('【歸納確認】', '')}</>
+                                        <><span className="text-blue-800 bg-orange-400 border border-orange-500 px-1.5 py-0.5 rounded-md mr-1">歸納確認</span>{q.question.replace('【歸納確認】', '')}</>
                                       ) : q.question}
                                     </div>
                                     <Icon name="ChevronDown" className={`accordion-arrow text-slate-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
@@ -2228,7 +2228,7 @@ ${qaText}`;
              <div className="p-8 pb-4" style={{ backgroundColor: `${color}10` }}>
                <h3 className="font-black" style={{ fontSize: `${session.questionFontSize}px`, color: session.questionColor || '#1e293b' }}>
                  {q?.question?.includes('【歸納確認】') ? (
-                   <><span className="text-blue-600 bg-white border-2 border-blue-600 px-2 py-0.5 rounded-lg mr-2 inline-block">【歸納確認】</span>{q.question.replace('【歸納確認】', '')}</>
+                   <><span className="text-blue-800 bg-orange-400 border-2 border-orange-500 px-2 py-0.5 rounded-lg mr-2 inline-block">歸納確認</span>{q.question.replace('【歸納確認】', '')}</>
                  ) : (
                    q?.question
                  )}
