@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>林峰賦家庭保額健診與高齡醫療黃金補強方案 - 動態模擬版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        .slide-container {
+            transition: opacity 0.35s ease-in-out, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .slide-hidden {
+            opacity: 0;
+            transform: scale(0.97) translateY(12px);
+            pointer-events: none;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            visibility: hidden;
+        }
+        .slide-active {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+            position: relative;
+            visibility: visible;
+        }
+
+        .editable-active [contenteditable="true"] {
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        .editable-active [contenteditable="true"]:hover {
+            outline: 2px dashed #8b5cf6;
+            outline-offset: 4px;
+            background-color: rgba(139, 92, 246, 0.03);
+            border-radius: 6px;
+            cursor: text;
+        }
+        .editable-active [contenteditable="true"]:focus {
+            outline: 2px solid #6d28d9;
+            outline-offset: 4px;
+            background-color: rgba(255, 255, 255, 0.98);
+            color: #1e293b !important;
+            border-radius: 6px;
+            box-shadow: 0 10px 25px -5px rgba(139, 92, 246, 0.15), 0 8px 10px -6px rgba(139, 92, 246, 0.15);
+        }
+
+        .hokkaido-grid {
+            background-image: radial-gradient(#e0e7ff 1.2px, transparent 1.2px), radial-gradient(#e0e7ff 1.2px, #fbfbfd 1.2px);
+            background-size: 24px 24px;
+            background-position: 0 0, 12px 12px;
+        }
+
+        .hover-hoverable {
+            transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .hover-hoverable:hover {
+            background-color: rgba(236, 253, 245, 0.85) !important; 
+            border-color: rgba(167, 243, 208, 0.6) !important;      
+            box-shadow: 0 4px 12px -1px rgba(16, 185, 129, 0.08) !important;
+        }
+
+        /* 統一所有按鈕的 10% 放大互動特效 */
+        button {
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s ease, box-shadow 0.2s ease !important;
+            transform-origin: center;
+        }
+        button:hover {
+            transform: scale(1.1);
+            z-index: 10;
+        }
+        /* 避免側邊欄按鈕放大時超出邊界 */
+        #sidebar-nav button {
+            transform-origin: left center;
+        }
+        /* 避免手機版選單按鈕過度變形 */
+        .md\:hidden:hover {
+            transform: scale(1.05);
+        }
+
+        @media print {
+            body { background: white !important; color: #1e293b !important; height: auto !important; }
+            .no-print { display: none !important; }
+            .slide-page-print {
+                display: block !important;
+                page-break-after: always;
+                position: relative !important;
+                width: 100% !important;
+                height: 100vh !important;
+                max-height: 100vh !important;
+                background: #fbfbfd !important;
+                border: none !important;
+                box-shadow: none !important;
+                transform: none !important;
+                opacity: 1 !important;
+                visibility: visible !important;
+            }
+            #main-layout { display: block !important; height: auto !important; }
+        }
+    </style>
+</head>
+<body class="bg-[#f3f7fc] text-slate-700 font-sans h-full overflow-hidden flex flex-col">
+
+    <header class="no-print bg-white/80 border-b border-indigo-100 px-4 md:px-6 py-3.5 flex flex-col lg:flex-row items-center justify-between gap-4 shrink-0 z-10 backdrop-blur-md">
+        <div class="flex items-center justify-between w-full lg:w-auto gap-3">
+            <div class="flex items-center gap-3">
+                <div class="bg-gradient-to-tr from-violet-500 to-indigo-500 p-2.5 rounded-2xl text-white shadow-lg shadow-indigo-100 shrink-0">
+                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m12.728 12.728l.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-base md:text-lg font-bold text-slate-800 flex items-center gap-2 flex-wrap">
+                        <span>林峰賦家庭高齡雙實支補強</span>
+                        <span id="edit-badge" class="px-2.5 py-0.5 text-[10px] font-extrabold bg-violet-100 text-violet-600 border border-violet-200 rounded-full animate-pulse">🪻 動態整合版</span>
+                    </h1>
+                    <p class="text-[10px] md:text-xs text-slate-400">日系富良野夏日主題 • 實支定額擇優切換簡報</p>
+                </div>
+            </div>
+            
+            <button onclick="toggleMobileSidebar()" class="md:hidden p-2 text-slate-500 hover:text-slate-800 bg-indigo-50/50 rounded-xl hover:bg-indigo-50 transition-colors">
+                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            </button>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-center lg:justify-end gap-2.5 w-full lg:w-auto">
+            <div class="flex items-center gap-1.5 shrink-0">
+                <button id="btn-prev-slide" onclick="prevSlide()" class="inline-flex items-center justify-center gap-1 px-3 py-2 bg-white hover:bg-indigo-50 active:scale-95 text-xs font-bold text-indigo-600 rounded-xl border border-indigo-150 shadow-sm transition-all" title="首頁">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg>
+                    <span>首頁</span>
+                </button>
+                <button id="btn-next-slide" onclick="nextSlide()" class="inline-flex items-center justify-center gap-1 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-xs font-bold text-white rounded-xl shadow-md shadow-indigo-100 transition-all" title="下一頁">
+                    <span>下一頁</span>
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
+                </button>
+            </div>
+            
+            <button id="btn-export-html" class="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 active:scale-95 text-xs font-bold text-white rounded-xl shadow-md shadow-emerald-100 transition-all">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                另存新 HTML 檔
+            </button>
+        </div>
+    </header>
+
+    <main id="main-layout" class="flex flex-1 overflow-hidden h-full relative">
+        <div id="mobile-backdrop" onclick="toggleMobileSidebar()" class="hidden fixed inset-0 bg-indigo-950/20 z-30 md:hidden backdrop-blur-sm transition-opacity duration-300"></div>
+
+        <nav id="sidebar-nav" class="no-print fixed md:static inset-y-0 left-0 z-40 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out w-64 bg-white border-r border-indigo-100 flex flex-col shrink-0 h-full">
+            <div class="p-4 border-b border-indigo-50 bg-indigo-50/20 flex items-center justify-between">
+                <span class="text-xs font-bold text-indigo-500 uppercase tracking-wider flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-violet-400"></span> 提案導覽索引
+                </span>
+                <button onclick="toggleMobileSidebar()" class="md:hidden text-slate-400 hover:text-slate-600">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto p-2 space-y-1.5 bg-[#fbfcfd]" id="slides-nav-list">
+                <button onclick="goToSlide(0)" id="nav-item-0" class="w-full text-left px-3.5 py-3 rounded-xl text-xs font-bold flex items-start gap-2.5 transition-all hover:text-slate-800 bg-indigo-50 text-indigo-700 border-l-4 border-indigo-600">
+                    <span class="bg-indigo-600 text-white font-mono font-bold px-1.5 py-0.5 rounded text-[10px]">1</span> <span class="flex-1 truncate">封面：WHS與高齡補強</span>
+                </button>
+                <button onclick="goToSlide(1)" id="nav-item-1" class="w-full text-left px-3.5 py-3 rounded-xl text-xs font-bold flex items-start gap-2.5 transition-all hover:text-slate-800 text-slate-500 hover:bg-slate-100/50">
+                    <span class="bg-slate-200 text-slate-500 font-mono font-bold px-1.5 py-0.5 rounded text-[10px]">2</span> <span class="flex-1 truncate">缺口 analysis：高齡實支斷崖</span>
+                </button>
+                <button onclick="goToSlide(2)" id="nav-item-2" class="w-full text-left px-3.5 py-3 rounded-xl text-xs font-bold flex items-start gap-2.5 transition-all hover:text-slate-800 text-slate-500 hover:bg-slate-100/50">
+                    <span class="bg-slate-200 text-slate-500 font-mono font-bold px-1.5 py-0.5 rounded text-[10px]">3</span> <span class="flex-1 truncate text-indigo-700 font-bold">動態分析：保額與理賠模擬</span>
+                </button>
+                <button onclick="goToSlide(3)" id="nav-item-3" class="w-full text-left px-3.5 py-3 rounded-xl text-xs font-bold flex items-start gap-2.5 transition-all hover:text-slate-800 text-slate-500 hover:bg-slate-100/50">
+                    <span class="bg-slate-200 text-slate-500 font-mono font-bold px-1.5 py-0.5 rounded text-[10px]">4</span> <span class="flex-1 truncate">預算表：轉帳折扣與配置</span>
+                </button>
+                <button onclick="goToSlide(4)" id="nav-item-4" class="w-full text-left px-3.5 py-3 rounded-xl text-xs font-bold flex items-start gap-2.5 transition-all text-slate-500 hover:bg-slate-100/50 hover:text-slate-800">
+                    <span class="bg-slate-200 text-slate-500 font-mono font-bold px-1.5 py-0.5 rounded text-[10px]">5</span> <span class="flex-1 truncate">資產ROI：WEHS×HPHI2 效益</span>
+                </button>
+                <button onclick="goToSlide(5)" id="nav-item-5" class="w-full text-left px-3.5 py-3 rounded-xl text-xs font-bold flex items-start gap-2.5 transition-all text-slate-500 hover:bg-slate-100/50 hover:text-slate-800">
+                    <span class="bg-slate-200 text-slate-500 font-mono font-bold px-1.5 py-0.5 rounded text-[10px]">6</span> <span class="flex-1 truncate text-violet-700 font-bold">理賠依據：雙實支規則明細</span>
+                </button>
+            </div>
+        </nav>
+
+        <div class="flex-1 flex flex-col items-center justify-center p-3 sm:p-5 md:p-8 bg-[#f3f7fc] relative overflow-y-auto w-full">
+            <div class="w-full max-w-5xl h-auto md:aspect-[16/9] bg-white border border-indigo-100/80 shadow-xl shadow-indigo-100/40 rounded-2xl md:rounded-3xl relative flex flex-col overflow-hidden min-h-[440px]">
+                
+                <div class="no-print w-full h-1.5 bg-indigo-50 absolute top-0 left-0 z-20">
+                    <div id="slide-progress-bar" class="h-full bg-gradient-to-r from-amber-400 via-sky-400 to-violet-400 transition-all duration-300" style="width: 16.6667%;"></div>
+                </div>
+
+                <div class="flex-1 flex flex-col justify-between p-6 md:p-8 relative overflow-y-auto hokkaido-grid" id="slides-master-viewport">
+                    
+                    <div id="slide-0" class="slide-container flex flex-col justify-between h-full slide-page-print slide-active">
+                        <div class="flex flex-col sm:flex-row justify-between items-start gap-2">
+                            <span class="px-3 py-1 text-[10px] font-bold bg-amber-500/10 text-amber-700 border border-amber-500/20 rounded-full tracking-wider editable" contenteditable="true">提案首頁</span>
+                            <span class="text-[10px] md:text-xs text-indigo-400 uppercase tracking-widest font-mono font-bold">南山人壽 WEHS × WHS 200萬</span>
+                        </div>
+                        <div class="my-auto py-6">
+                            <h2 class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-slate-800 tracking-tight leading-tight editable" contenteditable="true">
+                                林峰賦全家日額與<span class="text-transparent bg-clip-text bg-gradient-to-r from-violet-500 via-sky-500 to-amber-500">實支實付補強方案</span>
+                            </h2>
+                            <p class="text-xs sm:text-sm md:text-base text-slate-500 mt-4 max-w-3xl leading-relaxed editable" contenteditable="true">
+                                以現有全家投保之「WHS 200萬健康醫療終身帳戶」為基礎，加強「實健溢百 WEHS 計劃10」與本人「溢心守護2 HPHI2 3單位」黃金組合，鎖定提升病房費與手術費實支實付與日額定額額度。</p>
+                        </div>
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1 border-t border-indigo-100/60 pt-4 text-[10px] md:text-xs text-indigo-400 font-semibold">
+                            <div class="editable" contenteditable="true">📝 規劃對象：林峰賦 先生 (本人62歲/配偶56歲/長子29歲/次子24歲)</div>
+                            <div class="editable" contenteditable="true">📅 規劃期程：中華民國115年06月</div>
+                        </div>
+                    </div>
+
+                    <div id="slide-1" class="slide-container flex flex-col justify-between h-full slide-page-print slide-hidden">
+                        <div class="flex justify-between items-start">
+                            <span class="px-3 py-1 text-[10px] font-bold bg-rose-500/10 text-rose-600 border border-rose-500/20 rounded-full tracking-wider editable" contenteditable="true">⚠️ 現有保障痛點與高齡斷崖</span>
+                            <span class="text-[10px] md:text-xs text-indigo-400 uppercase tracking-widest font-mono font-bold">Slide 02</span>
+                        </div>
+                        <div class="my-auto py-3">
+                            <h3 class="text-lg md:text-2xl font-bold text-slate-800 mb-4 md:mb-6 flex items-center gap-2 editable" contenteditable="true">
+                                🔍 守護家人：現有規劃面臨之「三大保障真空」
+                            </h3>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div class="bg-white/95 p-5 rounded-2xl border border-rose-100 hover:border-emerald-300 hover:bg-emerald-50/80 hover:shadow-md transition-all duration-200 hover-hoverable">
+                                    <div class="text-rose-500 text-sm md:text-base font-extrabold mb-1.5 flex items-center gap-1.5">
+                                        <span class="bg-rose-50 px-1.5 py-0.5 rounded text-xs">01</span> <span class="editable" contenteditable="true">75歲實支強制終止</span>
+                                    </div>
+                                    <p class="text-[11px] md:text-xs text-slate-500 leading-relaxed editable" contenteditable="true">全家目前定期實支實付均在 75 歲到期終止。高齡自費醫材昂貴，高齡後無保額將面臨自費無解真空。</p>
+                                </div>
+                                <div class="bg-white/95 p-5 rounded-2xl border border-amber-100 hover:border-emerald-300 hover:bg-emerald-50/80 hover:shadow-md transition-all duration-200 hover-hoverable">
+                                    <div class="text-amber-600 text-sm md:text-base font-extrabold mb-1.5 flex items-center gap-1.5">
+                                        <span class="bg-amber-50 px-1.5 py-0.5 rounded text-xs">02</span> <span class="editable" contenteditable="true">核心支柱日額全家最低</span>
+                                    </div>
+                                    <p class="text-[11px] md:text-xs text-slate-500 leading-relaxed editable" contenteditable="true">核心經濟支柱林峰賦先生，原有住院日額僅有定期型 $4,000/日，為全家最低，保障結構失衡。</p>
+                                </div>
+                                <div class="bg-white/95 p-5 rounded-2xl border border-sky-100 hover:border-emerald-300 hover:bg-emerald-50/80 hover:shadow-md transition-all duration-200 hover-hoverable">
+                                    <div class="text-sky-600 text-sm md:text-base font-extrabold mb-1.5 flex items-center gap-1.5">
+                                        <span class="bg-sky-50 px-1.5 py-0.5 rounded text-xs">03</span> <span class="editable" contenteditable="true">現有200萬實支不足防禦</span>
+                                    </div>
+                                    <p class="text-[11px] md:text-xs text-slate-500 leading-relaxed editable" contenteditable="true">醫療通膨與新型微創手術高昂，現有一般定期實支已無法有效抵禦未來數十年的高額雜費，亟需高齡雙實支。</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="slide-2" class="slide-container flex flex-col h-full slide-page-print slide-hidden overflow-hidden">
+                        
+                        <div class="flex justify-between items-start mb-2 shrink-0">
+                            <span class="px-3 py-1 text-[10px] font-bold bg-indigo-500/10 text-indigo-700 border border-indigo-500/20 rounded-full tracking-wider editable" contenteditable="true">📊 動態分析中心：保額與理賠模擬</span>
+                            <span class="text-[10px] md:text-xs text-indigo-400 uppercase tracking-widest font-mono font-bold">Slide 03</span>
+                        </div>
+
+                        <div class="no-print flex flex-col lg:flex-row gap-2 mb-3 p-2 bg-indigo-50/30 border border-indigo-100 rounded-2xl items-stretch lg:items-center justify-between text-xs shadow-sm shrink-0">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="font-bold text-indigo-950 flex items-center gap-1">🕒 年齡區間:</span>
+                                <div class="inline-flex rounded-xl bg-slate-100/50 p-1 border border-indigo-50 shadow-sm shrink-0">
+                                    <button id="btn-age-under74" onclick="setAgeGroup('under74')" class="px-3 py-1 rounded-lg text-[11px] md:text-xs font-bold bg-red-600 text-white shadow-sm transition-all">74歲前</button>
+                                    <button id="btn-age-age74to75" onclick="setAgeGroup('age74to75')" class="px-3 py-1 rounded-lg text-[11px] md:text-xs font-semibold bg-transparent text-slate-500 hover:bg-slate-200 hover:text-slate-800 transition-all">74~75歲過渡</button>
+                                    <button id="btn-age-after75" onclick="setAgeGroup('after75')" class="px-3 py-1 rounded-lg text-[11px] md:text-xs font-semibold bg-transparent text-slate-500 hover:bg-slate-200 hover:text-slate-800 transition-all">75歲後</button>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="font-bold text-indigo-950 flex items-center gap-1">🛡️ 篩選維度:</span>
+                                <div class="inline-flex rounded-xl bg-slate-100/50 p-1 border border-indigo-50 shadow-sm shrink-0">
+                                    <button id="btn-cov-original" onclick="setCoverageType('original')" class="px-3 py-1 rounded-lg text-[11px] md:text-xs font-bold bg-red-600 text-white shadow-sm transition-all">原保障</button>
+                                    <button id="btn-cov-added" onclick="setCoverageType('added')" class="px-3 py-1 rounded-lg text-[11px] md:text-xs font-semibold bg-transparent text-slate-500 hover:bg-slate-200 hover:text-slate-800 transition-all">加保保障</button>
+                                    <button id="btn-cov-total" onclick="setCoverageType('total')" class="px-3 py-1 rounded-lg text-[11px] md:text-xs font-semibold bg-transparent text-slate-500 hover:bg-slate-200 hover:text-slate-800 transition-all">原+加保合計</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="no-print flex gap-2 mb-3 overflow-x-auto shrink-0 pb-1">
+                            <button onclick="switchTab('table')" id="tab-table" class="px-4 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap bg-red-600 text-white shadow-md border border-red-700 transition-all">📋 全家對照表</button>
+                            <button onclick="switchTab('caseA')" id="tab-caseA" class="px-4 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap bg-transparent text-slate-800 border border-slate-300 hover:bg-slate-100 transition-all">🍈 案例A (中度)</button>
+                            <button onclick="switchTab('caseB')" id="tab-caseB" class="px-4 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap bg-transparent text-slate-800 border border-slate-300 hover:bg-slate-100 transition-all">🪻 案例B (重大)</button>
+                            <button onclick="switchTab('caseC')" id="tab-caseC" class="px-4 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap bg-transparent text-slate-800 border border-slate-300 hover:bg-slate-100 transition-all">🏥 案例C (ICU)</button>
+                        </div>
+
+                        <div class="flex-1 overflow-y-auto flex flex-col h-full w-full relative">
+                            
+                            <div id="content-table" class="w-full transition-opacity duration-300 block">
+                                <div class="overflow-x-auto border border-indigo-100 rounded-2xl bg-white/95">
+                                    <table class="w-full text-left text-[11px] md:text-xs" id="dynamic-comparison-table">
+                                        <thead class="bg-emerald-600 text-white">
+                                            <tr class="border-b border-emerald-500 font-extrabold">
+                                                <th class="p-2.5 w-[25%]">成員 (保險年齡)</th>
+                                                <th class="p-2.5 w-[25%]">住院日額</th>
+                                                <th class="p-2.5 w-[25%]">癌症住院日額</th>
+                                                <th class="p-2.5 w-[25%]">醫療實支實付額度</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-100" id="table-body-dynamic">
+                                            </tbody>
+                                    </table>
+                                </div>
+                                <div class="mt-2 text-[10px] text-slate-400">＊點擊表格內文字可直接線上修改與備註。</div>
+                            </div>
+
+                            <div id="content-cases" class="w-full transition-opacity duration-300 hidden flex-col">
+                                <div class="no-print flex items-center gap-1.5 mb-3 bg-indigo-50/40 p-2 rounded-xl border border-indigo-100 flex-wrap shrink-0">
+                                    <span class="text-[10px] font-extrabold text-indigo-950 flex items-center gap-1">👤 選擇試算對象:</span>
+                                    <div class="inline-flex rounded-lg bg-slate-100/50 p-0.5 border border-indigo-50 shadow-sm flex-wrap" id="shared-insured-pills">
+                                        </div>
+                                </div>
+
+                                <div id="content-caseA" class="hidden flex-col h-full">
+                                    <h3 class="text-xs sm:text-sm font-bold text-slate-800 mb-2 editable" contenteditable="true">
+                                        <span class="bg-emerald-500 text-white px-2 py-0.5 rounded text-[10px] mr-1">案例A</span>中度住院：住院 10 天，病房自費每日 $5,000，醫療雜費 $10 萬元，共15萬元
+                                    </h3>
+                                    <div class="bg-white/95 p-4 rounded-xl border border-indigo-100 shadow-sm hover-hoverable">
+                                        <div id="case-a-badge-status" class="mb-2 flex items-center justify-between text-xs font-bold border-b border-indigo-50 pb-2"></div>
+                                        <ul id="case-a-items-list" class="space-y-1.5 text-[11px] md:text-xs text-slate-600"></ul>
+                                        <div class="mt-3 pt-2.5 border-t border-indigo-50 flex justify-between items-center font-bold text-emerald-600 text-xs md:text-sm">
+                                            <span>理賠給付總額：</span>
+                                            <span class="font-mono text-sm md:text-base text-emerald-600 font-extrabold" id="case-a-total-sum"></span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div id="content-caseB" class="hidden flex-col h-full">
+                                    <h3 class="text-xs sm:text-sm font-bold text-slate-800 mb-2 editable" contenteditable="true">
+                                        <span class="bg-violet-500 text-white px-2 py-0.5 rounded text-[10px] mr-1">案例B</span>重大住院：住院 15 天，病房費自費每日 $10,000，自費雜費 $50 萬元，共65萬元
+                                    </h3>
+                                    <div class="bg-white/95 p-4 rounded-xl border border-indigo-100 shadow-sm hover-hoverable">
+                                        <div id="case-b-badge-status" class="mb-2 flex items-center justify-between text-xs font-bold border-b border-indigo-50 pb-2"></div>
+                                        <ul id="case-b-items-list" class="space-y-1.5 text-[11px] md:text-xs text-slate-600"></ul>
+                                        <div class="mt-3 pt-2.5 border-t border-indigo-50 flex justify-between items-center font-bold text-emerald-600 text-xs md:text-sm">
+                                            <span>理賠給付總額：</span>
+                                            <span class="font-mono text-sm md:text-base text-emerald-600 font-extrabold" id="case-b-total-sum"></span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div id="content-caseC" class="hidden flex-col h-full">
+                                    <h3 class="text-xs sm:text-sm font-bold text-slate-800 mb-2 editable" contenteditable="true">
+                                        <span class="bg-amber-500 text-white px-2 py-0.5 rounded text-[10px] mr-1">案例C</span>重症住院：住院 15 天，包含加護病房(ICU) 2 天，自費雜費 $50 萬元，共65萬元
+                                    </h3>
+                                    <div class="bg-white/95 p-4 rounded-xl border border-indigo-100 shadow-sm hover-hoverable">
+                                        <div id="case-c-badge-status" class="mb-2 flex items-center justify-between text-xs font-bold border-b border-indigo-50 pb-2"></div>
+                                        <ul id="case-c-items-list" class="space-y-1.5 text-[11px] md:text-xs text-slate-600"></ul>
+                                        <div class="mt-3 pt-2.5 border-t border-indigo-50 flex justify-between items-center font-bold text-emerald-600 text-xs md:text-sm">
+                                            <span>理賠給付總額：</span>
+                                            <span class="font-mono text-sm md:text-base text-emerald-600 font-extrabold" id="case-c-total-sum"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div id="slide-3" class="slide-container slide-hidden flex flex-col justify-between h-full slide-page-print">
+                        <div class="flex justify-between items-start">
+                            <span class="px-3 py-1 text-[10px] font-bold bg-indigo-500/10 text-indigo-700 border border-indigo-500/20 rounded-full tracking-wider editable" contenteditable="true">💰 年繳保費與轉帳折扣配置</span>
+                            <span class="text-[10px] md:text-xs text-indigo-400 uppercase tracking-widest font-mono font-bold">Slide 04</span>
+                        </div>
+                        <div class="my-auto py-2">
+                            <h3 class="text-xs md:text-base font-bold text-slate-800 mb-2 md:mb-3 editable" contenteditable="true">🪻 加保方案年繳預算明細 (1% 轉帳折扣後實際繳費)</h3>
+                            <div class="overflow-x-auto border border-indigo-100 rounded-2xl bg-white/95 hover-hoverable">
+                                <table class="w-full text-left text-[11px] md:text-xs">
+                                    <thead>
+                                        <tr class="border-b border-indigo-50 text-indigo-950 bg-indigo-50/40">
+                                            <th class="p-3 font-extrabold w-[25%] text-slate-800">成員 (保險年齡)</th>
+                                            <th class="p-3 font-extrabold w-[45%] text-indigo-600">加保補強险種與額度</th>
+                                            <th class="p-3 font-extrabold w-[15%] text-violet-600 text-right">原年繳保費</th>
+                                            <th class="p-3 font-extrabold w-[15%] text-emerald-700 text-right">首期1%折扣後</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100 font-mono">
+                                        <tr class="hover:bg-emerald-50/80 transition-colors duration-200">
+                                            <td class="p-3 font-sans font-extrabold text-slate-800">林峰賦 先生 (62歲)</td>
+                                            <td class="p-3 font-sans text-slate-600 editable" contenteditable="true">HPHI2 3單位 ($261,852) + WEHS 計劃10 ($140,340)</td>
+                                            <td class="p-3 text-right text-slate-500 editable" contenteditable="true">$402,192 元</td>
+                                            <td class="p-3 text-right font-bold text-emerald-600 editable" contenteditable="true">$398,170 元</td>
+                                        </tr>
+                                        <tr class="hover:bg-emerald-50/80 transition-colors duration-200">
+                                            <td class="p-3 font-sans font-extrabold text-slate-800">何蕙瓊 小姐 (56歲)</td>
+                                            <td class="p-3 font-sans text-slate-600 editable" contenteditable="true">WEHS 計劃10 (定額轉高齡實支)</td>
+                                            <td class="p-3 text-right text-slate-500 editable" contenteditable="true">$99,560 元</td>
+                                            <td class="p-3 text-right font-bold text-emerald-600 editable" contenteditable="true">$98,564 元</td>
+                                        </tr>
+                                        <tr class="hover:bg-emerald-50/80 transition-colors duration-200">
+                                            <td class="p-3 font-sans font-extrabold text-slate-800">林俊良 先生 (29歲)</td>
+                                            <td class="p-3 font-sans text-slate-600 editable" contenteditable="true">WEHS 計劃10 (定額轉高齡實支)</td>
+                                            <td class="p-3 text-right text-slate-500 editable" contenteditable="true">$63,280 元</td>
+                                            <td class="p-3 text-right font-bold text-emerald-600 editable" contenteditable="true">$62,647 元</td>
+                                        </tr>
+                                        <tr class="hover:bg-emerald-50/80 transition-colors duration-200">
+                                            <td class="p-3 font-sans font-extrabold text-slate-800">林宏軒 先生 (24歲)</td>
+                                            <td class="p-3 font-sans text-slate-600 editable" contenteditable="true">WEHS 計劃10 (定額轉高齡實支)</td>
+                                            <td class="p-3 text-right text-slate-500 editable" contenteditable="true">$57,180 元</td>
+                                            <td class="p-3 text-right font-bold text-emerald-600 editable" contenteditable="true">$56,608 元</td>
+                                        </tr>
+                                        <tr class="bg-indigo-50/25 font-bold">
+                                            <td class="p-3 font-sans text-slate-800">全家合計預算</td>
+                                            <td class="p-3 font-sans text-indigo-700">全員WEHS加強 + 經濟支柱HPHI2補強</td>
+                                            <td class="p-3 text-right text-indigo-600 editable" contenteditable="true">$622,212 元</td>
+                                            <td class="p-3 text-right text-emerald-600 text-sm md:text-base font-extrabold editable" contenteditable="true">$615,989 元</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="slide-4" class="slide-container slide-hidden flex flex-col justify-between h-full slide-page-print">
+                        <div class="flex justify-between items-start">
+                            <span class="px-3 py-1 text-[10px] font-bold bg-emerald-500/10 text-emerald-700 border border-emerald-500/20 rounded-full tracking-wider editable" contenteditable="true">📈 新增方案 WEHS × HPHI2 價值效益與 WHS 資產 ROI</span>
+                            <span class="text-[10px] md:text-xs text-indigo-400 uppercase tracking-widest font-mono font-bold">Slide 05</span>
+                        </div>
+                        <div class="my-auto py-2">
+                            <h3 class="text-base md:text-2xl font-bold text-slate-800 mb-2.5 md:mb-4 editable" contenteditable="true">🏦 有去有回的「全家雙實支定存與終身增額保障」</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div class="bg-white/95 p-4 rounded-2xl border border-indigo-200 hover:border-emerald-300 hover:bg-emerald-50/80 hover:shadow-md transition-all duration-200 hover-hoverable flex flex-col justify-between">
+                                    <div>
+                                        <h4 class="text-xs md:text-sm font-bold text-indigo-950 mb-2 flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-violet-400"></span><span class="editable" contenteditable="true">WEHS 高齡雙實支核心</span></h4>
+                                        <p class="text-[10px] md:text-xs text-slate-500 leading-relaxed mb-3 editable" contenteditable="true">74歲起切換為實支實付，與 WHS 構成高齡雙實支，倍增自費額度。</p>
+                                    </div>
+                                    <div class="bg-indigo-50/40 p-2 rounded-xl border text-[10px] md:text-xs font-mono font-bold text-indigo-700 editable" contenteditable="true">WEHS高齡實支=自費$10萬/ICU$20萬</div>
+                                </div>
+                                <div class="bg-white/95 p-4 rounded-2xl border border-emerald-200 hover:border-emerald-300 hover:bg-emerald-50/80 hover:shadow-md transition-all duration-200 hover-hoverable flex flex-col justify-between">
+                                    <div>
+                                        <h4 class="text-xs md:text-sm font-bold text-emerald-800 mb-2 flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span><span class="editable" contenteditable="true">HPHI2 終身增額與給付</span></h4>
+                                        <p class="text-[10px] md:text-xs text-slate-500 leading-relaxed mb-3 editable" contenteditable="true">75歲起日額自動提升 1.5 倍。1,610項手術保證給付最高30萬。</p>
+                                    </div>
+                                    <div class="bg-emerald-500/10 p-2 rounded-xl border text-[10px] md:text-xs font-mono font-bold text-emerald-700 editable" contenteditable="true">HPHI2 75歲增額=日額$4,500/ICU$13,500</div>
+                                </div>
+                                <div class="bg-white/95 p-4 rounded-2xl border border-amber-100 hover:border-emerald-300 hover:bg-emerald-50/80 hover:shadow-md transition-all duration-200 hover-hoverable flex flex-col justify-between">
+                                    <div>
+                                        <h4 class="text-xs md:text-sm font-bold text-amber-700 mb-2 flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span><span class="editable" contenteditable="true">WHS 終身帳戶保全</span></h4>
+                                        <p class="text-[10px] md:text-xs text-slate-500 leading-relaxed mb-3 editable" contenteditable="true">最獨特的身故保全：已領醫療給付與總繳保費相減，賸餘款全數退還！</p>
+                                    </div>
+                                    <div class="bg-amber-500/10 p-2 rounded-xl border text-[10px] md:text-xs font-mono font-bold text-amber-700 editable" contenteditable="true">資產保全=總繳保費 - 已領取理賠總額</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="slide-5" class="slide-container slide-hidden flex flex-col justify-between h-full slide-page-print">
+                        <div class="flex justify-between items-start">
+                            <span class="px-3 py-1 text-[10px] font-bold bg-violet-500/10 text-violet-700 border border-violet-500/20 rounded-full tracking-wider editable" contenteditable="true">📋 理賠依據與雙實支規則明細對照表</span>
+                            <span class="text-[10px] md:text-xs text-indigo-400 uppercase tracking-widest font-mono font-bold">Slide 06</span>
+                        </div>
+                        
+                        <div class="my-auto py-1.5">
+                            <h3 class="text-xs md:text-base font-bold text-slate-800 mb-1.5 editable" contenteditable="true">🔍 核心險種：三大階段實支定額細則與 ICU 規範對照表</h3>
+                            <div class="overflow-x-auto border border-violet-200 rounded-xl bg-white/95 hover-hoverable">
+                                <table class="w-full text-left text-[10px] md:text-xs divide-y divide-violet-100">
+                                    <thead>
+                                        <tr class="bg-emerald-600 text-white font-extrabold">
+                                            <th class="p-2.5 w-[16%] border-r border-emerald-500 text-center text-white">階段 / 大類</th>
+                                            <th class="p-2.5 w-[28%] border-r border-emerald-500 text-white">WHS 終身醫療帳戶</th>
+                                            <th class="p-2.5 w-[28%] border-r border-emerald-500 text-white">WEHS 實健溢百</th>
+                                            <th class="p-2.5 w-[28%] text-white">HPHI2 溢心守護2</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100">
+                                        <tr class="hover:bg-violet-50/30">
+                                            <td class="p-2 text-center font-extrabold text-violet-700 bg-violet-50/40 border-r border-violet-100 text-[10px]">74 歲前<br>【幼年~中年】</td>
+                                            <td class="p-2 text-slate-600 border-r border-violet-100 editable" contenteditable="true">住院定額 $2000 與 實支 $20萬 擇優給付。</td>
+                                            <td class="p-2 text-slate-600 border-r border-violet-100 editable" contenteditable="true">定額給付保障模式：住院日額 $1000/日。</td>
+                                            <td class="p-2 text-slate-600 editable" contenteditable="true">住院保證 $3000/日，手術最高30萬。</td>
+                                        </tr>
+                                        <tr class="hover:bg-violet-50/30">
+                                            <td class="p-2 text-center font-extrabold text-amber-700 bg-amber-50/30 border-r border-violet-100 text-[10px]">74 ~ 75 歲<br>【過渡期】</td>
+                                            <td class="p-2 text-slate-600 border-r border-violet-100 editable" contenteditable="true">過渡期保證接軌：維持原擇優機制。</td>
+                                            <td class="p-2 text-slate-600 border-r border-violet-100 bg-emerald-50/40 text-emerald-950 editable" contenteditable="true">切換實支實付型：雜費每次最高 10萬。</td>
+                                            <td class="p-2 text-slate-600 editable" contenteditable="true">維持住院定額 $3000/日穩定理賠。</td>
+                                        </tr>
+                                        <tr class="hover:bg-violet-50/30">
+                                            <td class="p-2 text-center font-extrabold text-orange-700 bg-orange-50/30 border-r border-violet-100 text-[10px]">75 歲後<br>【高齡期】</td>
+                                            <td class="p-2 text-slate-600 border-r border-violet-100 font-semibold text-indigo-950 editable" contenteditable="true">高齡終身 200 萬實支實付續存！</td>
+                                            <td class="p-2 text-slate-600 border-r border-violet-100 bg-emerald-50/40 text-emerald-950 editable" contenteditable="true">與 WHS 疊加發揮「雙實支」加倍效益。</td>
+                                            <td class="p-2 text-slate-600 font-semibold text-emerald-950 editable" contenteditable="true">終身日額自動提高 1.5 倍至 $4500/日。</td>
+                                        </tr>
+                                        <tr class="hover:bg-violet-50/30">
+                                            <td class="p-2 text-center font-extrabold text-purple-700 bg-purple-50/30 border-r border-violet-100 text-[10px]">加護病房<br>【ICU】</td>
+                                            <td class="p-2 text-slate-600 border-r border-violet-100 editable" contenteditable="true">實支房費額度加倍至每日 $4000。</td>
+                                            <td class="p-2 text-slate-600 border-r border-violet-100 editable" contenteditable="true">74歲後自費雜費上限翻倍至 $20萬！</td>
+                                            <td class="p-2 text-slate-600 editable" contenteditable="true">75歲後 ICU 日額最高可達 $13500/日。</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="no-print bg-slate-100/50 border-t border-indigo-50 px-4 md:px-6 py-3 flex items-center justify-between shrink-0">
+                    <div class="flex items-center gap-1.5 md:gap-2">
+                        <button onclick="prevSlide()" class="p-2 bg-white rounded-xl border border-indigo-150 text-indigo-700 shadow-sm active:scale-95 transition-all hover:bg-red-600 hover:text-white" title="上一個 Slide (←鍵)">
+                            <svg class="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg>
+                        </button>
+                        <span class="text-xs font-mono font-bold text-slate-500 bg-white border border-indigo-50 px-2.5 py-1 rounded-lg" id="slide-index-indicator">01 / 06</span>
+                        <button onclick="nextSlide()" class="p-2 bg-white rounded-xl border border-indigo-150 text-indigo-700 shadow-sm active:scale-95 transition-all hover:bg-red-600 hover:text-white" title="下一個 Slide (→鍵)">
+                            <svg class="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
+                        </button>
+                    </div>
+
+                    <div class="hidden sm:flex items-center gap-1.5" id="slide-bullet-container">
+                        </div>
+
+                    <div class="text-[10px] text-indigo-400 font-bold tracking-wide uppercase flex items-center gap-1">
+                        <span>南山富良野夏日聯動版</span><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <div id="toast-box" class="no-print fixed bottom-4 right-4 z-50 bg-slate-800 text-white text-xs px-4 py-2.5 rounded-xl shadow-lg transform transition-all duration-300 flex items-center gap-2 font-semibold opacity-0 pointer-events-none translate-y-10">
+        <span id="toast-message">💾 簡報網頁匯出成功！已另存為全新 HTML 檔案。</span>
+    </div>
+
+    <script>
+        // Total Slides reduced from 9 to 6 because simulation slides are merged
+        let currentSlideIndex = 0;
+        const totalSlidesCount = 6; 
+        
+        let selectedAgeGroup = 'under74'; 
+        let selectedCoverageType = 'original'; 
+        let selectedInsuredIndex = 0; 
+        let activeSimulationTab = 'table'; // table, caseA, caseB, caseC
+
+        const familyInsuredProfiles = [
+            { name: "林峰賦", age: 62, role: "本人", hospOriginal: 4000, hospAdded: 3000, cancerOriginal: 14000, cancerAdded: 4000, reimOriginal: 300000, reimAdded: 200000 },
+            { name: "何蕙瓊", age: 56, role: "配偶", hospOriginal: 8000, hospAdded: 0, cancerOriginal: 18000, cancerAdded: 0, reimOriginal: 300000, reimAdded: 100000 },
+            { name: "林俊良", age: 29, role: "長子", hospOriginal: 10000, hospAdded: 0, cancerOriginal: 10000, cancerAdded: 0, reimOriginal: 350000, reimAdded: 100000 },
+            { name: "林宏軒", age: 24, role: "次子", hospOriginal: 11200, hospAdded: 0, cancerOriginal: 21200, cancerAdded: 0, reimOriginal: 350000, reimAdded: 100000 }
+        ];
+
+        const slideData = [
+            {
+                name: "林峰賦 先生 (62歲)",
+                under74: {
+                    original: { hosp: "$4,000 元/日 (定期型住院日額)", cancer: "$14,000 元/日 (原終身型癌險)", reimbursement: "$30 萬元 (定期 $10萬 + WHS $20萬)" },
+                    added:    { hosp: "$4,000 元/日 (HPHI2: $3k + WEHS: $1k)", cancer: "$4,300 元/日 (HPHI2: $3k + WEHS住院 $1k + 癌 $300)", reimbursement: "無 (定額給付期)" },
+                    total:    { hosp: "$8,000 元/日", cancer: "$18,300 元/日", reimbursement: "$30 萬元 (WHS + 定期實支)" }
+                },
+                age74to75: {
+                    original: { hosp: "$4,000 元/日 (定期型住院日額)", cancer: "$14,000 元/日 (原終身型癌險)", reimbursement: "$30 萬元 (定期 $10萬 + WHS $20萬)" },
+                    added:    { hosp: "$3,000 元/日 (HPHI2 3單位)", cancer: "$3,000 元/日 (HPHI2 3單位)", reimbursement: "$10 萬元 (WEHS 計劃10已啟動)" },
+                    total:    { hosp: "$7,000 元/日", cancer: "$17,000 元/日", reimbursement: "$40 萬元 (原 $30萬 + WEHS $10萬)" }
+                },
+                after75: {
+                    original: { hosp: "$2,000 元/日 (WHS 擇優)", cancer: "$14,000 元/日 (原終身型癌險)", reimbursement: "$20 萬元 (WHS 終身帳戶)" },
+                    added:    { hosp: "$4,500 元/日 (HPHI2 增額 1.5 倍)", cancer: "$4,500 元/日 (HPHI2 癌症同住院日額)", reimbursement: "$10 萬元 (WEHS 續保至84歲)" },
+                    total:    { hosp: "$6,500 元/日 (WHS $2k + HPHI2 $4.5k)", cancer: "$18,500 元/日", reimbursement: "$30 萬元 (WHS $20萬 + WEHS $10萬)" }
+                }
+            },
+            {
+                name: "何蕙瓊 小姐 (56歲)",
+                under74: {
+                    original: { hosp: "$8,000 元/日 (原定期+終身)", cancer: "$18,000 元/日 (原終身型癌險)", reimbursement: "$30 萬元 (定期 $10萬 + WHS $20萬)" },
+                    added:    { hosp: "$1,000 元/日 (WEHS定額)", cancer: "$1,300 元/日 (WEHS日額 + 癌 $300)", reimbursement: "無 (定額給付期)" },
+                    total:    { hosp: "$9,000 元/日", cancer: "$19,300 元/日", reimbursement: "$30 萬元 (WHS + 定期實支)" }
+                },
+                age74to75: {
+                    original: { hosp: "$8,000 元/日 (原定期+終身)", cancer: "$18,000 元/日 (原終身型癌險)", reimbursement: "$30 萬元 (定期 $10萬 + WHS $20萬)" },
+                    added:    { hosp: "無 (定額已轉換實支)", cancer: "無 (定額已轉換實支)", reimbursement: "$10 萬元 (WEHS 計劃10已啟動)" },
+                    total:    { hosp: "$8,000 元/日", cancer: "$18,000 元/日", reimbursement: "$40 萬元" }
+                },
+                after75: {
+                    original: { hosp: "$5,000 元/日 (原日額 $3k + WHS $2k)", cancer: "$18,000 元/日 (原終身型)", reimbursement: "$20 萬元 (WHS 終身帳戶)" },
+                    added:    { hosp: "無 (定期已到期)", cancer: "無 (定期已到期)", reimbursement: "$10 萬元 (WEHS 續保)" },
+                    total:    { hosp: "$5,000 元/日", cancer: "$18,000 元/日", reimbursement: "$30 萬元 (WHS $20萬 + WEHS $10萬)" }
+                }
+            },
+            {
+                name: "林俊良 先生 (29歲)",
+                under74: {
+                    original: { hosp: "$10,000 元/日", cancer: "$10,000 元/日", reimbursement: "$35 萬元 (定期 $15萬 + WHS $20萬)" },
+                    added:    { hosp: "$1,000 元/日 (WEHS定額)", cancer: "$1,300 元/日 (WEHS日額 + 癌 $300)", reimbursement: "無 (定額給付期)" },
+                    total:    { hosp: "$11,000 元/日", cancer: "$11,300 元/日", reimbursement: "$35 萬元" }
+                },
+                age74to75: {
+                    original: { hosp: "$10,000 元/日", cancer: "$10,000 元/日", reimbursement: "$35 萬元 (定期 $15萬 + WHS $20萬)" },
+                    added:    { hosp: "無 (定額已轉換實支)", cancer: "無 (定額已轉換實支)", reimbursement: "$10 萬元 (WEHS 計劃10已啟動)" },
+                    total:    { hosp: "$10,000 元/日", cancer: "$10,000 元/日", reimbursement: "$45 萬元" }
+                },
+                after75: {
+                    original: { hosp: "$7,000 元/日 (原日額 $5k + WHS $2k)", cancer: "$10,000 元/日", reimbursement: "$20 萬元 (WHS 終身帳戶)" },
+                    added:    { hosp: "無 (定期已到期)", cancer: "無 (定期已到期)", reimbursement: "$10 萬元 (WEHS 續保)" },
+                    total:    { hosp: "$7,000 元/日", cancer: "$10,000 元/日", reimbursement: "$30 萬元 (WHS $20萬 + WEHS $10萬)" }
+                }
+            },
+            {
+                name: "林宏軒 先生 (24歲)",
+                under74: {
+                    original: { hosp: "$11,200 元/日", cancer: "$21,200 元/日", reimbursement: "$35 萬元 (定期 $15萬 + WHS $20萬)" },
+                    added:    { hosp: "$1,000 元/日 (WEHS定額)", cancer: "$1,300 元/日 (WEHS日額 + 癌 $300)", reimbursement: "無 (定額給付期)" },
+                    total:    { hosp: "$12,200 元/日", cancer: "$22,500 元/日", reimbursement: "$35 萬元" }
+                },
+                age74to75: {
+                    original: { hosp: "$11,200 元/日", cancer: "$21,200 元/日", reimbursement: "$35 萬元 (定期 $15萬 + WHS $20萬)" },
+                    added:    { hosp: "無 (定額已轉換實支)", cancer: "無 (定額已轉換實支)", reimbursement: "$10 萬元 (WEHS 計劃10已啟動)" },
+                    total:    { hosp: "$11,200 元/日", cancer: "$21,200 元/日", reimbursement: "$45 萬元" }
+                },
+                after75: {
+                    original: { hosp: "$8,200 元/日 (原日額 $6.2k + WHS $2k)", cancer: "$21,200 元/日", reimbursement: "$20 萬元 (WHS 終身帳戶)" },
+                    added:    { hosp: "無 (定期已到期)", cancer: "無 (定期已到期)", reimbursement: "$10 萬元 (WEHS 續保)" },
+                    total:    { hosp: "$8,200 元/日", cancer: "$21,200 元/日", reimbursement: "$30 萬元 (WHS $20萬 + WEHS $10萬)" }
+                }
+            }
+        ];
+
+        function updateSlideDeck() {
+            for (let i = 0; i < totalSlidesCount; i++) {
+                const el = document.getElementById(`slide-${i}`);
+                if (el) {
+                    if (i === currentSlideIndex) {
+                        el.classList.add('slide-active');
+                        el.classList.remove('slide-hidden');
+                    } else {
+                        el.classList.remove('slide-active');
+                        el.classList.add('slide-hidden');
+                    }
+                }
+                const navItem = document.getElementById(`nav-item-${i}`);
+                if (navItem) {
+                    if (i === currentSlideIndex) {
+                        navItem.classList.add('bg-indigo-50', 'text-indigo-700', 'border-l-4', 'border-indigo-600');
+                        navItem.classList.remove('text-slate-500', 'hover:bg-slate-100/50');
+                    } else {
+                        navItem.classList.remove('bg-indigo-50', 'text-indigo-700', 'border-l-4', 'border-indigo-600');
+                        navItem.classList.add('text-slate-500', 'hover:bg-slate-100/50');
+                    }
+                }
+            }
+
+            const bullets = document.querySelectorAll('[data-bullet-idx]');
+            bullets.forEach((b, idx) => {
+                if (idx === currentSlideIndex) {
+                    b.classList.add('bg-indigo-600', 'w-6');
+                    b.classList.remove('bg-indigo-200', 'w-2.5');
+                } else {
+                    b.classList.remove('bg-indigo-600', 'w-6');
+                    b.classList.add('bg-indigo-200', 'w-2.5');
+                }
+            });
+
+            const idxIndicator = document.getElementById('slide-index-indicator');
+            if (idxIndicator) {
+                idxIndicator.textContent = `${String(currentSlideIndex + 1).padStart(2, '0')} / ${String(totalSlidesCount).padStart(2, '0')}`;
+            }
+
+            const progressBar = document.getElementById('slide-progress-bar');
+            if (progressBar) {
+                progressBar.style.width = `${((currentSlideIndex + 1) / totalSlidesCount) * 100}%`;
+            }
+            
+            // 動態更新頂部「上一頁/下一頁」按鈕文字
+            const btnPrevTopText = document.querySelector('#btn-prev-slide span');
+            const btnNextTopText = document.querySelector('#btn-next-slide span');
+            
+            if (btnPrevTopText) {
+                btnPrevTopText.textContent = currentSlideIndex === 0 ? "首頁" : "上一頁";
+            }
+            if (btnNextTopText) {
+                btnNextTopText.textContent = currentSlideIndex === totalSlidesCount - 1 ? "最後一頁" : "下一頁";
+            }
+        }
+
+        function nextSlide() { if (currentSlideIndex < totalSlidesCount - 1) { currentSlideIndex++; updateSlideDeck(); } }
+        function prevSlide() { if (currentSlideIndex > 0) { currentSlideIndex--; updateSlideDeck(); } }
+        function goToSlide(idx) {
+            if (idx >= 0 && idx < totalSlidesCount) {
+                currentSlideIndex = idx;
+                updateSlideDeck();
+                toggleMobileSidebar(false);
+            }
+        }
+
+        function setMode(mode) {
+            const viewBtn = document.getElementById('btn-view-mode');
+            const editBtn = document.getElementById('btn-edit-mode');
+            if (mode === 'edit') {
+                document.body.classList.add('editable-active');
+                if (editBtn) editBtn.className = "px-3 py-1.5 rounded-lg text-xs font-bold text-violet-600 bg-white shadow-sm transition-all";
+                if (viewBtn) viewBtn.className = "px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-600 transition-all";
+                document.querySelectorAll('[contenteditable="false"]').forEach(el => el.setAttribute('contenteditable', 'true'));
+            } else {
+                document.body.classList.remove('editable-active');
+                if (viewBtn) viewBtn.className = "px-3 py-1.5 rounded-lg text-xs font-bold text-indigo-600 bg-white shadow-sm transition-all";
+                if (editBtn) editBtn.className = "px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-600 transition-all";
+                document.querySelectorAll('[contenteditable="true"]').forEach(el => el.setAttribute('contenteditable', 'false'));
+            }
+        }
+
+        function setAgeGroup(group) {
+            selectedAgeGroup = group;
+            ['under74', 'age74to75', 'after75'].forEach(k => {
+                const btn = document.getElementById(`btn-age-${k}`);
+                if (btn) btn.className = k === group ? "px-3 py-1 rounded-lg text-[11px] md:text-xs font-bold bg-red-600 text-white shadow-sm transition-all" : "px-3 py-1 rounded-lg text-[11px] md:text-xs font-semibold bg-transparent text-slate-500 hover:bg-slate-200 hover:text-slate-800 transition-all";
+            });
+            renderAllDynamicViews();
+            const labelMap = { under74: "74歲前", age74to75: "74~75歲過渡期", after75: "75歲(含)以後" };
+            showToast(`🕒 已切換年齡區間：${labelMap[group]}`);
+        }
+
+        function setCoverageType(type) {
+            selectedCoverageType = type;
+            ['original', 'added', 'total'].forEach(k => {
+                const btn = document.getElementById(`btn-cov-${k}`);
+                if (btn) btn.className = k === type ? "px-3 py-1 rounded-lg text-[11px] md:text-xs font-bold bg-red-600 text-white shadow-sm transition-all" : "px-3 py-1 rounded-lg text-[11px] md:text-xs font-semibold bg-transparent text-slate-500 hover:bg-slate-200 hover:text-slate-800 transition-all";
+            });
+            renderAllDynamicViews();
+            const labelMap = { original: "原有保障", added: "加保保障", total: "原保障+加保合計" };
+            showToast(`🛡️ 已篩選保障：${labelMap[type]}`);
+        }
+
+        function setInsured(idx) {
+            selectedInsuredIndex = idx;
+            renderInsuredPills();
+            renderAllDynamicViews();
+            showToast(`👤 已切換試算對象：${familyInsuredProfiles[idx].name} (${familyInsuredProfiles[idx].role})`);
+        }
+
+        // 修改後的 switchTab 函數：包含按鈕樣式的動態變更
+        function switchTab(tabId) {
+            activeSimulationTab = tabId;
+            const tabs = [
+                {id: 'table', label: '📋 全家對照表'}, 
+                {id: 'caseA', label: '🍈 案例A (中度)'}, 
+                {id: 'caseB', label: '🪻 案例B (重大)'}, 
+                {id: 'caseC', label: '🏥 案例C (ICU)'}
+            ];
+            
+            // 更新按鈕樣式 (紅底白字 vs 透明背景深字)
+            tabs.forEach(tab => {
+                const btn = document.getElementById('tab-' + tab.id);
+                if(btn) {
+                    if (tab.id === tabId) {
+                        btn.className = "px-4 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap bg-red-600 text-white shadow-md border border-red-700 transition-all";
+                    } else {
+                        btn.className = "px-4 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap bg-transparent text-slate-800 border border-slate-300 hover:bg-slate-100 transition-all";
+                    }
+                }
+            });
+
+            // 處理內容區塊顯示/隱藏邏輯
+            const contentTable = document.getElementById('content-table');
+            const contentCases = document.getElementById('content-cases');
+            
+            if (tabId === 'table') {
+                contentTable.classList.remove('hidden');
+                contentCases.classList.add('hidden');
+                contentCases.classList.remove('flex');
+            } else {
+                contentTable.classList.add('hidden');
+                contentCases.classList.remove('hidden');
+                contentCases.classList.add('flex');
+                
+                ['caseA', 'caseB', 'caseC'].forEach(c => {
+                    const el = document.getElementById('content-' + c);
+                    if(el) {
+                        if (c === tabId) {
+                            el.classList.remove('hidden');
+                            el.classList.add('flex');
+                        } else {
+                            el.classList.add('hidden');
+                            el.classList.remove('flex');
+                        }
+                    }
+                });
+            }
+        }
+
+        function renderInsuredPills() {
+            const container = document.getElementById('shared-insured-pills');
+            if (!container) return;
+            container.innerHTML = '';
+            familyInsuredProfiles.forEach((profile, i) => {
+                const btn = document.createElement('button');
+                btn.textContent = `${profile.name} (${profile.role})`;
+                btn.className = (i === selectedInsuredIndex) 
+                    ? "px-2.5 py-1 rounded-md text-[10px] md:text-xs font-bold transition-all duration-200 bg-red-600 text-white shadow-sm"
+                    : "px-2.5 py-1 rounded-md text-[10px] md:text-xs font-semibold transition-all duration-200 bg-transparent text-slate-500 hover:bg-slate-200 hover:text-slate-800";
+                btn.onclick = () => setInsured(i);
+                container.appendChild(btn);
+            });
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast-box');
+            const toastMsg = document.getElementById('toast-message');
+            if (toast && toastMsg) {
+                toastMsg.textContent = message;
+                toast.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-10');
+                toast.classList.add('opacity-100', 'translate-y-0');
+                setTimeout(() => {
+                    toast.classList.remove('opacity-100', 'translate-y-0');
+                    toast.classList.add('opacity-0', 'pointer-events-none', 'translate-y-10');
+                }, 2000);
+            }
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('table-body-dynamic');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            familyInsuredProfiles.forEach((profile, i) => {
+                const data = slideData[i][selectedAgeGroup][selectedCoverageType];
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-emerald-50/80 transition-colors duration-200";
+                const badge = (selectedAgeGroup === 'after75' && selectedCoverageType === 'original') 
+                    ? `<span class="text-[9px] font-bold text-rose-600 bg-rose-50 border border-rose-200 rounded px-1 ml-1">高齡到期</span>` : '';
+                tr.innerHTML = `
+                    <td class="p-2.5 font-extrabold text-slate-800 text-[10px] md:text-xs">${profile.name} <span class="hidden sm:inline">(${profile.role})</span> ${badge}</td>
+                    <td class="p-2.5 font-mono font-medium text-indigo-600 text-[10px] md:text-xs editable" contenteditable="true">${data.hosp}</td>
+                    <td class="p-2.5 font-mono font-medium text-violet-600 text-[10px] md:text-xs editable" contenteditable="true">${data.cancer}</td>
+                    <td class="p-2.5 font-mono font-bold text-emerald-600 text-[10px] md:text-xs editable" contenteditable="true">${data.reimbursement}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderCases() {
+            const profile = familyInsuredProfiles[selectedInsuredIndex];
+            const ageLabel = { under74: "74歲前", age74to75: "74~75歲過渡期", after75: "75歲後高齡期" }[selectedAgeGroup];
+            const covLabel = { original: "原保障", added: "加保保障", total: "合計保障" }[selectedCoverageType];
+
+            const populateCase = (badgeId, listId, sumId, caseTitle, htmlItems, sum) => {
+                const badge = document.getElementById(badgeId);
+                const list = document.getElementById(listId);
+                const sumEl = document.getElementById(sumId);
+                if(badge && list && sumEl) {
+                    badge.innerHTML = `<span class="text-violet-700 flex items-center gap-1">📋 ${profile.name} (${profile.role})</span><span class="px-2 py-0.5 rounded-full text-[10px] bg-violet-100 text-violet-700 font-bold">${ageLabel} • ${covLabel}</span>`;
+                    list.innerHTML = htmlItems;
+                    sumEl.textContent = `$${sum.toLocaleString()} 元`;
+                }
+            };
+
+            // CASE A
+            let htmlA = '', valA = 0;
+            if (selectedCoverageType === 'original' || selectedCoverageType === 'total') {
+                htmlA += `<li class="flex justify-between"><span>WHS 終身實支房費 (自費 10天)：</span><span class="font-mono font-bold">$20,000 元</span></li><li class="flex justify-between"><span>WHS 終身實支雜費 (限額 $20萬)：</span><span class="font-mono font-bold">$100,000 元</span></li>`;
+                valA += 120000;
+                if (selectedAgeGroup !== 'after75') {
+                    htmlA += `<li class="flex justify-between text-indigo-600"><span>原一般定期實支房費 ($1k/日)：</span><span class="font-mono font-bold">$10,000 元</span></li><li class="flex justify-between text-indigo-600"><span>原一般定期醫療雜費 ($10萬)：</span><span class="font-mono font-bold">$100,000 元</span></li>`;
+                    valA += 110000;
+                }
+            }
+            if (selectedCoverageType === 'added' || selectedCoverageType === 'total') {
+                if (selectedAgeGroup === 'under74') {
+                    htmlA += `<li class="flex justify-between text-emerald-700"><span>WEHS 住院定額日額補償：</span><span class="font-mono font-bold">$10,000 元</span></li>`;
+                    valA += 10000;
+                } else {
+                    htmlA += `<li class="flex justify-between text-emerald-700"><span>WEHS 實支房費限額 ($1k/日)：</span><span class="font-mono font-bold">$10,000 元</span></li><li class="flex justify-between text-emerald-700"><span>WEHS 實支雜費限額：</span><span class="font-mono font-bold">$100,000 元</span></li>`;
+                    valA += 110000;
+                }
+                if (selectedInsuredIndex === 0) {
+                    const v = selectedAgeGroup === 'after75' ? 45000 : 30000;
+                    htmlA += `<li class="flex justify-between text-violet-700 font-semibold"><span>HPHI2 終身保證給付：</span><span class="font-mono font-bold">$${v.toLocaleString()} 元</span></li>`;
+                    valA += v;
+                }
+            }
+            populateCase('case-a-badge-status', 'case-a-items-list', 'case-a-total-sum', 'A', htmlA, valA);
+
+            // CASE B
+            let htmlB = '', valB = 0;
+            if (selectedCoverageType === 'original' || selectedCoverageType === 'total') {
+                htmlB += `<li class="flex justify-between"><span>WHS 終身實支房費 ($2k/日)：</span><span class="font-mono font-bold">$30,000 元</span></li><li class="flex justify-between"><span>WHS 終身實支雜費 (達上限)：</span><span class="font-mono font-bold">$200,000 元</span></li>`;
+                valB += 230000;
+                if (selectedAgeGroup !== 'after75') {
+                    htmlB += `<li class="flex justify-between text-indigo-600"><span>原一般定期實支房費：</span><span class="font-mono font-bold">$15,000 元</span></li><li class="flex justify-between text-indigo-600"><span>原一般定期醫療雜費上限：</span><span class="font-mono font-bold">$100,000 元</span></li>`;
+                    valB += 115000;
+                }
+            }
+            if (selectedCoverageType === 'added' || selectedCoverageType === 'total') {
+                if (selectedAgeGroup === 'under74') {
+                    htmlB += `<li class="flex justify-between text-emerald-700"><span>WEHS 住院定額日額補償：</span><span class="font-mono font-bold">$15,000 元</span></li>`;
+                    valB += 15000;
+                } else {
+                    htmlB += `<li class="flex justify-between text-emerald-700"><span>WEHS 實支房費差額：</span><span class="font-mono font-bold">$15,000 元</span></li><li class="flex justify-between text-emerald-700"><span>WEHS 實支雜費補強上限：</span><span class="font-mono font-bold">$100,000 元</span></li>`;
+                    valB += 115000;
+                }
+                if (selectedInsuredIndex === 0) {
+                    const v = selectedAgeGroup === 'after75' ? 67500 : 45000;
+                    htmlB += `<li class="flex justify-between text-violet-700 font-semibold"><span>HPHI2 終身保證給付：</span><span class="font-mono font-bold">$${v.toLocaleString()} 元</span></li>`;
+                    valB += v;
+                }
+            }
+            populateCase('case-b-badge-status', 'case-b-items-list', 'case-b-total-sum', 'B', htmlB, valB);
+
+            // CASE C
+            let htmlC = '', valC = 0;
+            if (selectedCoverageType === 'original' || selectedCoverageType === 'total') {
+                htmlC += `<li class="flex justify-between"><span>WHS 終身房費 (一般 13天)：</span><span class="font-mono font-bold">$26,000 元</span></li><li class="flex justify-between text-purple-700 font-semibold"><span>WHS 終身房費 (ICU加倍 2天)：</span><span class="font-mono font-bold">$8,000 元</span></li><li class="flex justify-between"><span>WHS 終身醫療雜費限額：</span><span class="font-mono font-bold">$200,000 元</span></li>`;
+                valC += 234000;
+                if (selectedAgeGroup !== 'after75') {
+                    htmlC += `<li class="flex justify-between text-indigo-600"><span>原定期一般房費 (13天)：</span><span class="font-mono font-bold">$13,000 元</span></li><li class="flex justify-between text-indigo-600"><span>原定期加倍房費 (ICU 2天)：</span><span class="font-mono font-bold">$4,000 元</span></li><li class="flex justify-between text-indigo-600"><span>原定期實支醫療雜費上限：</span><span class="font-mono font-bold">$100,000 元</span></li>`;
+                    valC += 117000;
+                }
+            }
+            if (selectedCoverageType === 'added' || selectedCoverageType === 'total') {
+                if (selectedAgeGroup === 'under74') {
+                    htmlC += `<li class="flex justify-between text-emerald-700"><span>WEHS 定額日額 (13天)：</span><span class="font-mono font-bold">$13,000 元</span></li><li class="flex justify-between text-purple-700 font-semibold"><span>WEHS ICU增額日額 (2天)：</span><span class="font-mono font-bold">$4,000 元</span></li>`;
+                    valC += 17000;
+                } else {
+                    htmlC += `<li class="flex justify-between text-emerald-700"><span>WEHS 實支房費 (一般 13天)：</span><span class="font-mono font-bold">$13,000 元</span></li><li class="flex justify-between text-purple-700 font-semibold"><span>WEHS ICU雙倍房費實支：</span><span class="font-mono font-bold">$4,000 元</span></li><li class="flex justify-between text-purple-700 font-bold"><span>WEHS ICU雜費加倍上限：</span><span class="font-mono font-bold">$200,000 元</span></li>`;
+                    valC += 217000;
+                }
+                if (selectedInsuredIndex === 0) {
+                    const norm = selectedAgeGroup !== 'after75' ? 39000 : 58500;
+                    const icu = selectedAgeGroup !== 'after75' ? 24000 : 27000;
+                    htmlC += `<li class="flex justify-between text-violet-700 font-semibold"><span>HPHI2 終身日額 (一般 13天)：</span><span class="font-mono font-bold">$${norm.toLocaleString()} 元</span></li><li class="flex justify-between text-purple-700 font-bold"><span>HPHI2 加護病房日額 (ICU 2天)：</span><span class="font-mono font-bold">$${icu.toLocaleString()} 元</span></li>`;
+                    valC += (norm + icu);
+                }
+            }
+            populateCase('case-c-badge-status', 'case-c-items-list', 'case-c-total-sum', 'C', htmlC, valC);
+        }
+
+        function renderAllDynamicViews() {
+            renderTable();
+            renderCases();
+        }
+
+        function toggleMobileSidebar(force) {
+            const sidebar = document.getElementById('sidebar-nav');
+            const backdrop = document.getElementById('mobile-backdrop');
+            if (!sidebar || !backdrop) return;
+            const isCurrentlyHidden = sidebar.classList.contains('-translate-x-full');
+            const targetShow = (typeof force === 'boolean') ? force : isCurrentlyHidden;
+
+            if (targetShow) {
+                sidebar.classList.remove('-translate-x-full'); sidebar.classList.add('translate-x-0');
+                backdrop.classList.remove('hidden'); backdrop.classList.add('opacity-100');
+            } else {
+                sidebar.classList.add('-translate-x-full'); sidebar.classList.remove('translate-x-0');
+                backdrop.classList.add('hidden'); backdrop.classList.remove('opacity-100');
+            }
+        }
+
+        function setupBullets() {
+            const container = document.getElementById('slide-bullet-container');
+            if (!container) return;
+            container.innerHTML = '';
+            for (let i = 0; i < totalSlidesCount; i++) {
+                const dot = document.createElement('button');
+                dot.setAttribute('data-bullet-idx', i);
+                dot.onclick = () => goToSlide(i);
+                dot.className = (i === currentSlideIndex) 
+                    ? "h-2.5 bg-indigo-600 rounded-full w-6 transition-all duration-300"
+                    : "h-2.5 bg-indigo-200 rounded-full w-2.5 transition-all duration-300 hover:bg-indigo-300";
+                container.appendChild(dot);
+            }
+        }
+
+        function setupKeyboardControls() {
+            document.onkeydown = (e) => {
+                if (document.activeElement && document.activeElement.getAttribute('contenteditable') === 'true') return;
+                if (e.key === 'ArrowRight' || e.key === 'PageDown') nextSlide();
+                else if (e.key === 'ArrowLeft' || e.key === 'PageUp') prevSlide();
+            };
+        }
+
+        function setupTouchGestures() {
+            let startX = 0;
+            const viewport = document.getElementById('slides-master-viewport');
+            if (!viewport) return;
+            viewport.addEventListener('touchstart', (e) => { startX = e.changedTouches[0].screenX; }, { passive: true });
+            viewport.addEventListener('touchend', (e) => {
+                const distance = e.changedTouches[0].screenX - startX;
+                if (Math.abs(distance) > 60) {
+                    if (distance > 0) prevSlide(); else nextSlide();
+                }
+            }, { passive: true });
+        }
+
+        function setupExportHTML() {
+            const btn = document.getElementById('btn-export-html');
+            if (!btn) return;
+            btn.onclick = () => {
+                document.body.classList.remove('editable-active');
+                const cleanHTML = document.documentElement.outerHTML;
+                document.body.classList.add('editable-active');
+
+                const blob = new Blob([cleanHTML], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = "林峰賦家庭保額健診_動態整合版.html";
+                document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+                showToast("💾 簡報網頁匯出成功！已另存為全新 HTML 檔案。");
+            };
+        }
+
+        function initApp() {
+            setupBullets();
+            renderInsuredPills();
+            setMode('edit');
+            switchTab('table'); // Default tab in simulation slide
+            setAgeGroup('under74');
+            setCoverageType('original');
+            setupKeyboardControls();
+            setupTouchGestures();
+            setupExportHTML();
+            updateSlideDeck();
+        }
+
+        if (document.readyState === 'loading') {
+            window.addEventListener('DOMContentLoaded', initApp);
+        } else {
+            initApp();
+        }
+    </script>
+
+</body>
+</html>
